@@ -1,0 +1,2606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trashland Rogue Starter</title>
+  <style>
+    :root {
+      --bg: #070b10;
+      --panel: #111827;
+      --text: #d1d5db;
+      --muted: #94a3b8;
+      --accent: #22d3ee;
+      --danger: #fb7185;
+      --good: #4ade80;
+      --gold: #facc15;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at top, #12233a 0%, var(--bg) 58%);
+      color: var(--text);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 16px;
+    }
+
+    .shell {
+      width: min(100%, 1360px);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 320px;
+      gap: 16px;
+    }
+
+    .panel {
+      background: rgba(17, 24, 39, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 18px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+      overflow: hidden;
+    }
+
+    .game-wrap {
+      padding: 14px;
+      position: relative;
+      min-height: 480px;
+    }
+
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      min-height: 100%;
+    }
+
+    .section {
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .section:last-child { border-bottom: none; }
+
+    .title {
+      font-size: 14px;
+      color: var(--accent);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    #game {
+      width: 100%;
+      min-height: 452px;
+      overflow: visible;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #board {
+      display: grid;
+      grid-template-columns: repeat(64, 14px);
+      grid-template-rows: repeat(36, 18px);
+      max-width: 100%;
+      gap: 0;
+      padding: 14px;
+      background: rgba(0, 0, 0, 0.22);
+      border-radius: 14px;
+      line-height: 18px;
+      user-select: none;
+      contain: layout paint style;
+      backface-visibility: hidden;
+    }
+
+    .cell {
+      width: 14px;
+      height: 18px;
+      display: block;
+      text-align: center;
+      line-height: 18px;
+      font-size: 18px;
+      font-weight: 700;
+      text-shadow: 0 0 8px rgba(255,255,255,0.08);
+      transition: none;
+      filter: none !important;
+      backface-visibility: hidden;
+      -webkit-font-smoothing: none;
+      text-rendering: geometricPrecision;
+    }
+
+    #boot {
+      position: absolute;
+      inset: 14px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 18px;
+      color: var(--muted);
+      pointer-events: none;
+    }
+
+    #boot.error {
+      display: flex;
+      pointer-events: auto;
+      color: var(--danger);
+    }
+
+    #boot.error code {
+      display: block;
+      margin-top: 10px;
+      padding: 10px;
+      background: rgba(0,0,0,0.35);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      color: var(--text);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .stats-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+
+    .badge {
+      color: var(--gold);
+    }
+
+    #log {
+      height: 360px;
+      max-height: 360px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      scrollbar-gutter: stable;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--text);
+      padding-right: 4px;
+    }
+
+    .log-line {
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    .controls {
+      display: grid;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .lore-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.78);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      padding: 24px;
+      z-index: 20;
+    }
+
+    .lore-card {
+      width: min(100%, 760px);
+      max-height: min(82vh, 760px);
+      background: linear-gradient(180deg, rgba(10,18,30,0.98), rgba(28,10,36,0.98));
+      border: 1px solid rgba(34,211,238,0.25);
+      border-radius: 20px;
+      box-shadow: 0 20px 80px rgba(0,0,0,0.55);
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .lore-title {
+      font-size: 20px;
+      color: #f9a8d4;
+      margin-bottom: 12px;
+    }
+
+    .lore-body {
+      white-space: pre-wrap;
+      line-height: 1.6;
+      color: #e5e7eb;
+      overflow-y: auto;
+      overflow-x: hidden;
+      scrollbar-gutter: stable;
+      padding-right: 4px;
+      flex: 1 1 auto;
+      min-height: 0;
+    }
+
+    .lore-hint {
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    @media (max-width: 900px) {
+      .shell {
+        grid-template-columns: 1fr;
+      }
+
+      .cell {
+        width: 1.24ch;
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="panel game-wrap">
+      <div id="game"><div id="board"></div></div>
+      <div id="boot"></div>
+    </div>
+
+    <div class="panel sidebar">
+      <div class="section">
+        <div class="title">Trashland Rogue</div>
+        <div class="stats-row"><span>Biome</span><span id="biome-name" class="badge">Unknown</span></div>
+        <div class="stats-row"><span>HP</span><span id="hp">10 / 10</span></div>
+        <div class="stats-row"><span>Power</span><span id="power">3</span></div>
+        <div class="stats-row"><span>Armor</span><span id="armor">0</span></div>
+        <div class="stats-row"><span>Bombs</span><span id="bombs">0</span></div>
+        <div class="stats-row"><span>Floor</span><span id="depth">1</span></div>
+        <div class="stats-row"><span>Best Floor</span><span id="best-floor">1</span></div>
+        <div class="stats-row"><span>Threat</span><span id="threat">0</span></div>
+        <div class="stats-row"><span>Relics</span><span id="artifact-status">0 / 1</span></div>
+      </div>
+
+      <div class="section">
+        <div class="title">Controls</div>
+        <div class="controls">
+          <div>Arrow keys or WASD: move</div>
+          <div>E: interact / read relic</div>
+          <div>F: plant bomb</div>
+          <div>R: restart run</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="title">Message Log</div>
+        <div id="log"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="lore-modal" class="lore-modal" role="dialog" aria-modal="true" aria-label="Lore">
+    <div class="lore-card">
+      <div id="lore-title" class="lore-title"></div>
+      <div id="lore-body" class="lore-body"></div>
+      <div class="lore-hint">Press Escape, Enter, or tap outside this card to close.</div>
+    </div>
+  </div>
+
+  <script>
+    const CONFIG = {
+      width: 64,
+      height: 36,
+      seed: 13371337,
+      roomAttempts: 55,
+      minRoom: 5,
+      maxRoom: 12,
+      enemyCount: 9,
+      portalCount: 4,
+      fovRadius: 8,
+      visionAspect: 1.42,
+      healDropChance: 0.42,
+      bigHealDropChance: 0.08,
+      floorHealCount: 5,
+      floorArmorCount: 2,
+      floorPowerCount: 1,
+      floorBombChance: 0.28,
+      eliteEvery: 1,
+      bossEvery: 3,
+      acidCount: 18,
+      colors: {
+        bg: '#070b10',
+        unseen: '#03050a',
+        seen: '#0c121a',
+        player: '#22d3ee',
+        relic: '#facc15',
+        heal: '#4ade80',
+        exit: '#fb7185',
+        wallPlastic: '#f472b6',
+        wallWire: '#38bdf8',
+        wallFungus: '#a78bfa',
+        wallBone: '#fca5a5',
+        wallData: '#67e8f9',
+        floorPlastic: '#31425b',
+        floorWire: '#1f3b47',
+        floorFungus: '#362d4f',
+        floorBone: '#4a2f36',
+        floorData: '#193440'
+      }
+    };
+
+    const BIOMES = [
+      {
+        id: 'plastic_dunes',
+        name: 'Melt Atrium',
+        wallGlyphs: ['#', '▓', '%'],
+        floorGlyphs: ['.', ',', '·'],
+        wallColor: CONFIG.colors.wallPlastic,
+        floorColor: CONFIG.colors.floorPlastic,
+        enemyNames: ['mire hound', 'blind lizard', 'flood rat', 'rot cat', 'ash spider'],
+        enemyGlyphs: ['g', '%', '&'],
+        enemyColors: ['#4ade80', '#86efac', '#22c55e'],
+        relicNouns: ['atrium lung', 'plastic crown', 'turnstile idol'],
+        flavor: [
+          'The floor crunches like toy shells and old keyboards underfoot.',
+          'Every wall looks injection-molded by a dying god.'
+        ]
+      },
+      {
+        id: 'wire_cathedral',
+        name: 'Service Spine',
+        wallGlyphs: ['╬', '╫', '║'],
+        floorGlyphs: ['·', ':', '='],
+        wallColor: CONFIG.colors.wallWire,
+        floorColor: CONFIG.colors.floorWire,
+        enemyNames: ['vent crawler', 'glass bat', 'undercourt roach', 'drain eel', 'vault croc'],
+        enemyGlyphs: ['s', '†', '≈'],
+        enemyColors: ['#60a5fa', '#22d3ee', '#93c5fd'],
+        relicNouns: ['sewer halo', 'battery orchard', 'cable psalm'],
+        flavor: [
+          'The corridors hum in obedient little harmonics.',
+          'Cables droop like organ pipes in a drowned chapel.'
+        ]
+      },
+      {
+        id: 'fungus_bloom',
+        name: 'Bloom Cavern',
+        wallGlyphs: ['▒', '░', '*'],
+        floorGlyphs: ['~', '.', '°'],
+        wallColor: CONFIG.colors.wallFungus,
+        floorColor: CONFIG.colors.floorFungus,
+        enemyNames: ['splitjaw', 'crooked saint', 'stitched lizard', 'mirrorcat', 'mold jackal'],
+        enemyGlyphs: ['m', '*', '§'],
+        enemyColors: ['#c084fc', '#d8b4fe', '#a855f7'],
+        relicNouns: ['polymer saint', 'mildew sermon', 'violet lung'],
+        flavor: [
+          'The bloom exhales little legal arguments into the air.',
+          'Purple fuzz gathers in the corners like sleeping royalty.'
+        ]
+      },
+      {
+        id: 'bone_cache',
+        name: 'Ossuary Concourse',
+        wallGlyphs: ['†', '‡', '╳'],
+        floorGlyphs: ['.', ';', '•'],
+        wallColor: CONFIG.colors.wallBone,
+        floorColor: CONFIG.colors.floorBone,
+        enemyNames: ['rot cat', 'atrium crab', 'bone jackal', 'glass bat', 'drain eel', 'blind lizard', 'pit jackal'],
+        enemyGlyphs: ['j', '†', 'b'],
+        enemyColors: ['#fca5a5', '#fda4af', '#fb7185'],
+        relicNouns: ['femur tag', 'ivory engine', 'hollow crown'],
+        flavor: [
+          'The silence here sounds filed and numbered.',
+          'Every corner contains a neat little tragedy.'
+        ]
+      },
+      {
+        id: 'data_landfill',
+        name: 'Arcade Midden',
+        wallGlyphs: ['█', '▓', '▒'],
+        floorGlyphs: ['0', '1', '.'],
+        wallColor: CONFIG.colors.wallData,
+        floorColor: CONFIG.colors.floorData,
+        enemyNames: ['mirrorcat', 'gloom serpent', 'pit jackal', 'ash spider', 'vault croc', 'night lynx', 'cave widow'],
+        enemyGlyphs: ['0', '1', '?'],
+        enemyColors: ['#67e8f9', '#22d3ee', '#a5f3fc'],
+        relicNouns: ['archive tooth', 'cache oracle', 'checksum halo'],
+        flavor: [
+          'The debris flickers like it still wants to be useful.',
+          'Broken numerals cling to the walls like barnacles.'
+        ]
+      }
+    ];
+
+
+
+    const PERSON_FIRST_NAMES = [
+      'Paul','Mira','June','Niko','Vera','Sora','Ivo','Lena','Toma','Kira','Dorian','Mara','Juno','Elio','Talia','Riva','Oren','Leda','Nerea','Hugo',
+      'Akira','Ren','Kaito','Yori','Miko','Ilya','Zora','Luka','Signe','Freja','Ione','Caio','Ines','Joao','Tiago','Nika','Maja','Runa','Isandro','Marisol',
+      'Leif','Noa','Santi','Yuna','Riku','Dasha','Tomo','Pilar','Bruno','Soraia','Oskar','Kei','Iria','Mateo','Rafael','Nora','Petra','Aksel','Eira','Lio',
+      'Sabela','Rin','Kian','Yelena','Cassia','Viktor','Aina','Haru','Lucia','Mikkel','Svenja','Rocio','Naoki','Aurelio','Paloma','Toru','Esme','Bela','Raisa','Ida',
+      'Teo','Mina','Sol','Ariadne','Vasco','Nuri','Ciro','Aya','Mireya','Dag','Kasia','Takeshi','Yara','Mauro','Eiko','Soren','Luz','Tam','Iris','Veda'
+    ];
+    const PERSON_MIDDLE_NAMES = [
+      'Vale','Vireo','Lowlight','Arcadia','Vanta','Mournhall','Dustwell','Nightcourt','Atriumborn','Mireborn','Blackfen','Southcourt','Floodstairs','Ventwalker','Underglass','Undermere','Gloam','Halden','Pike','Bloom',
+      'Velasco','Volkov','Prism','Hyperion','Tekko','Galaxian','Noctis','Azura','Mirai','Caligo','Rostov','Sigrid','Novablue','Wondercade','Playset','Starblade','Moonkart','Chromeburst','Glassmilk','Softstep',
+      'Holloway','Fen','Drift','Aster','Manta','Vortex','Joypad','Radiant','Brightglass','Dustcourt','Mirelight','Rainhall','Northlift','Westcourt','Larksong','Greasefoot','Ashfoot','Quiethall','Spillway','Virek'
+    ];
+    const PERSON_LAST_NAMES = [
+      'Vale','Vireo','Floodstairs','Atriumborn','Nightcourt','Ventwalker','Glassmilk','Mireborn','Ashfoot','Lowlight','Southcourt','Holloway','Blackfen','Dustwell','Gloam','Mournhall','Pike','Softstep','Drift','Undermere',
+      'Volkov','Vanta','Halden','Fen','Bloom','Underglass','Rostov','Virek','Northlift','Westcourt','Spillway','Rainhall','Brightglass','Dustcourt','Mirelight','Velasco','Arcadia','Noctis','Prism','Aster',
+      'Larksong','Greasefoot','Quiethall','Moonkart','Starblade','Chromeburst','Playset','Wondercade','Mirai','Tekko','Hyperion','Galaxian','Novablue','Caligo','Manta','Joypad','Vortex','Radiant','Azura','Sigrid'
+    ];
+    const PERSON_TITLES = [
+      'Brother','Sister','Rector','Deacon','Warden','Keeper','Mender','Custodian','Archivist','Marshal','Prior','Abbess','Cardinal','Steward','Auditor','Chamberlain','Reliquary','Shrine Warden','Lady','Princeps'
+    ];
+    const PERSON_FOLK_PREFIXES = [
+      'Little','Old','Pale','Dusty','Aunt','Uncle','Velvet','Quiet','Southcourt','Hollow','Low','Bright','Black','Soft','Grease','Flood','Third','Night','East','West'
+    ];
+    const PERSON_PLACES = [
+      'Food Court South','Flood Stairs','Dark Arcade','Third Descent','the Vents','East Rotunda','Quiet Hall','Spillway','Lower Shops','Service South','Prize Hall','Quiet Lifts','Atrium Glass','Night Court','Lower Arcade','Back Corridors','Food Hall','Third Ramp','Wet Chapel','Service Dark'
+    ];
+    const POP_EPITHETS = [
+      'Laserwolf','Vector','Magdalena','VHS','Vanta','Tekko','Polygon','Hyperion','Bitrate','Galaxian','Ultrastar','Playset','Starblade','Moonkart','Chromeburst','Wondercade','Prismwolf','Arc Nova','Radiant-X','Joypad',
+      'Arcadia','Vortex','Nova-Blue','Mech','Prism','Turbo','Neon','Velvet','Nova','Mirai-X'
+    ];
+    const LONG_CONNECTORS = ['de','de la','da','das','do','of','from'];
+
+    const CREATURE_PREFIXES = [
+      'Gutter','Ash','Blind','Mold','Flood','Mire','Glass','Pale','Dust','Blackfen','Spill','Brine','Night','Vent','Pit','Hollow','Deepcourt','Rotunda','Stoneback','Burrow',
+      'Floodstairs','Underglass','Prize Hall','Atrium','Mall','Rafter','Silt','Gloom','Vault','Cave','Under','Dusk','Quiet Hall','Service Spine','Lower Arcade','West Rotunda','Service Dark','Arcade','Chapel','Sinkhole'
+    ];
+    const CREATURE_SPECIES = [
+      'Leech','Spider','Crab','Lizard','Jackal','Rat','Hound','Bat','Vulture','Cat','Eel','Moth','Toad','Roach','Hyena','Wolf','Ape','Lynx','Serpent','Crawler',
+      'Panther','Mantis','Viper','Basilisk','Widow','Boar','Lion','Cougar','Croc','Prowler','Maw','Tiger','Newt','Monitor','Mole','Skitterer','Ferret','Drake'
+    ];
+    const CREATURE_LOCALS = [
+      'Gluejaw','Softclaw','Candle-Eye','Crooked Boy','Three-Step','Old Teeth','Whistler','Long One','Bent Prince','Auntie Claws','Rag Mouth','Hall Loper','Two-Maw','Quiet Greg','Bone-Licker',
+      'Skitter Duke','Wetfoot','Lamp-Eye','Red Smile','Low Prince','Stair Ghost','Prize Dog','Wet Cat','Glass Aunt','Rot Child','Quiet Widow','Drain Prince','Long Cat','Pale Cousin','Black Tongue'
+    ];
+    const EXPERIMENT_PREFIXES = [
+      'Splitjaw','Half-Face','Bent','Mirror','Crooked','Left-Hand','Twinspine','Off-Eye','Stitched','Forktail','Hook-Leg','Misgrown','Glass-Toothed','Scaffold','Unpaired','Ragged','Spine Choir','Tilted','Asymmetry','One-Sided',
+      'Borrowed','Off-Center','Refit','Stagger','Pale Twin','Backwards','Thorn-Mouthed','Sidewound','Miscalibrated','False'
+    ];
+    const EXPERIMENT_SUBJECTS = [
+      'Hound','Runner','Saint','Maw','Lizard','Crab','Ape','Panther','Leech','Basilisk','Lion','Leopard','Wolf','Jackal','Cat','Widow','Serpent','Husk','Crawler','Mantis'
+    ];
+    const LEGENDARY_NAMES = [
+      'Prince of Food Court South','Queen Underglass','Saint Claw of Lower Atrium','Black Regent','Lord Hollow-Fang','Consumer of Warm Light','Baroness Mire','Third Lion of West Rotunda','Old Mother Flood','Vanta Hound',
+      'Last Panther','Escaped Reliquary','Prince Hookjaw','Caustic Queen','Velvet Devourer','Crooked Comptroller','Lady Nightcourt','Deep Arcade Lion','Mender of Bones','Bent Prince','Quiet Lion of Service South','Lower Arcade Widow',
+      'Lamp-Eyed Steward','Atrium Leopard','Long Duchess of Rotunda Glass','Saint of Burned Plush','Panther Under Service Dark','Last Prince of Prize Hall','Hound in Flood Stairs','Warden of Warm Plastic'
+    ];
+
+    function weightedPick(options) {
+      const total = options.reduce((sum, o) => sum + o.w, 0);
+      let roll = rng.next() * total;
+      for (const opt of options) {
+        roll -= opt.w;
+        if (roll <= 0) return opt.v;
+      }
+      return options[options.length - 1].v;
+    }
+
+    function maybeUnique(parts, nextPart) {
+      if (!nextPart || parts.includes(nextPart)) return parts;
+      parts.push(nextPart);
+      return parts;
+    }
+
+    function buildPersonName() {
+      const style = weightedPick([
+        { w: 16, v: 'single' },
+        { w: 36, v: 'double' },
+        { w: 24, v: 'triple' },
+        { w: 12, v: 'folk' },
+        { w: 8, v: 'titled' },
+        { w: 8, v: 'pop' },
+        { w: 6, v: 'long' }
+      ]);
+      const first = randItem(PERSON_FIRST_NAMES);
+      const middle = randItem(PERSON_MIDDLE_NAMES);
+      const last = randItem(PERSON_LAST_NAMES);
+      if (style === 'single') return first;
+      if (style === 'double') return `${first} ${last === first ? middle : last}`;
+      if (style === 'triple') {
+        const parts = [first];
+        maybeUnique(parts, middle);
+        maybeUnique(parts, last);
+        return parts.join(' ');
+      }
+      if (style === 'folk') {
+        return rng.next() < 0.45
+          ? `${randItem(PERSON_FOLK_PREFIXES)} ${first}`
+          : `${first} ${rng.next() < 0.45 ? 'of' : 'from'} ${randItem(PERSON_PLACES)}`;
+      }
+      if (style === 'titled') {
+        return `${randItem(PERSON_TITLES)} ${rng.next() < 0.35 ? `${first} ${last}` : first}`;
+      }
+      if (style === 'pop') {
+        const mode = rng.int(0, 3);
+        if (mode === 0) return `${first} ${randItem(POP_EPITHETS)}`;
+        if (mode === 1) return `${rng.pick(['Lady','Prince','Princess','Duke','Baron','Queen','Nova'])} ${randItem(POP_EPITHETS)}`;
+        if (mode === 2) return `${rng.pick(['Turbo','Neon','Velvet'])} ${first}`;
+        return `${first} ${middle} ${randItem(POP_EPITHETS)}`;
+      }
+      const connector = randItem(LONG_CONNECTORS);
+      const farLast = randItem(PERSON_LAST_NAMES);
+      const parts = [first, middle];
+      if (rng.next() < 0.55) maybeUnique(parts, randItem(PERSON_FIRST_NAMES));
+      parts.push(connector, farLast === middle ? last : farLast);
+      if (rng.next() < 0.28) maybeUnique(parts, last);
+      return parts.join(' ');
+    }
+
+    function buildCreatureName(base = '') {
+      const style = weightedPick([
+        { w: 26, v: 'base' },
+        { w: 28, v: 'compound' },
+        { w: 18, v: 'local' },
+        { w: 16, v: 'experiment' },
+        { w: 12, v: 'legend' }
+      ]);
+      if (style === 'base' && base) return base.replace(/\b\w/g, c => c.toUpperCase());
+      if (style === 'compound') return `${randItem(CREATURE_PREFIXES)} ${randItem(CREATURE_SPECIES)}`;
+      if (style === 'local') return randItem(CREATURE_LOCALS);
+      if (style === 'experiment') {
+        if (rng.next() < 0.28) return `${randItem(EXPERIMENT_PREFIXES)} ${randItem(EXPERIMENT_SUBJECTS)} of Gut Punch`;
+        return `${randItem(EXPERIMENT_PREFIXES)} ${randItem(EXPERIMENT_SUBJECTS)}`;
+      }
+      return randItem(LEGENDARY_NAMES);
+    }
+
+    function makeEnemyIdentity(base) {
+      const roll = rng.next();
+      if (roll < 0.48) return { name: buildCreatureName(base), personLike: false };
+      if (roll < 0.92) return { name: buildPersonName(), personLike: true };
+      return { name: randItem(LEGENDARY_NAMES), personLike: rng.next() < 0.65 };
+    }
+
+    function makeEliteIdentity(base) {
+      const identity = makeEnemyIdentity(base);
+      if (identity.personLike) {
+        if (rng.next() < 0.35) identity.name = `${randItem(['Warden','Marshal','Keeper','Old','Hardened','Velvet'])} ${identity.name}`;
+      } else if (rng.next() < 0.45) {
+        identity.name = `${randItem(['Hardened','Mutant','Feral','Lurching','Glass-Toothed'])} ${identity.name}`;
+      }
+      return identity;
+    }
+
+    function makeBossIdentity(template) {
+      const suffix = template && template.title ? `, ${template.title}` : '';
+      const roll = rng.next();
+      if (roll < 0.50) return { name: `${buildPersonName()}${suffix}`, personLike: true };
+      if (roll < 0.78) return { name: `${randItem(LEGENDARY_NAMES)}${suffix}`, personLike: rng.next() < 0.5 };
+      return { name: `${buildCreatureName('')}${suffix}`, personLike: false };
+    }
+    const ENEMY_DEATHS = [
+      '{name} crumples into a dark little heap.',
+      '{name} folds like wet packaging left in the rain.',
+      '{name} spills apart in a rude geometry.',
+      '{name} comes unstitched and goes quiet.',
+      '{name} collapses beside the wall and stays there.',
+      '{name} loses shape and slumps into the grime.',
+      '{name} topples over and never finds the will to rise.',
+      '{name} smears across the floor like a bad idea.',
+      '{name} breaks apart under the pressure.',
+      '{name} drops in a tangle of limbs, claws, and regret.'
+    ];
+    const ENEMY_FINISHES = [
+      'You flatten {name} before {pronoun} can answer back.',
+      '{name} goes over backward and does not get back up.',
+      'You pulp {name} before {pronoun} can properly object.',
+      '{name} folds under the pressure and stays down.',
+      'You smash {name} into the floor and keep moving.',
+      '{name} meets a blunt little ending.',
+      'You knock {name} sideways into history.',
+      '{name} runs out of arguments and falls apart.',
+      'You turn the nearby junk into a working weapon and finish {name}.',
+      '{name} gets introduced to the nearest hard surface and loses.'
+    ];
+    const RELIC_BURIALS = [
+      'It was sealed in pink dust and gloss dandruff.',
+      'It was packed in damp lint, wrapper shreds, and soft grit.',
+      'It was found under a skin of glitter mold and tag ash.',
+      'It was nested in old packing foam and a nest of brittle tags.',
+      'It was sleeping inside a pile of sweet-smelling industrial crumbs.'
+    ];
+    const RELIC_NOTICES = [
+      'No one signed the notice. Everyone obeyed it.',
+      'A wet little label insisted this was for internal reverence only.',
+      'Someone cataloged it as harmless, which felt like a threat.',
+      'A stamped warning promised nothing and sounded very confident.',
+      'The nearest surviving memo described it as emotionally active.'
+    ];
+
+    const DEATH_TEXTS = [
+      'You dissolve into premium refuse. Press R to restart.',
+      'Trashland closes its greasy fist around your little glyph. Press R to restart.',
+      'You are compacted into symbolic mulch. Press R to restart.',
+      'The district keeps your bones and refunds nothing. Press R to restart.',
+      'You die in a shower of obsolete meaning. Press R to restart.',
+      'You end as one more cautionary shape in the dark. Press R to restart.',
+      'The buried complex outlasts you with embarrassing ease. Press R to restart.',
+      'You get folded into the place and vanish from the ledger. Press R to restart.'
+    ];
+
+    const RELIC_OMENS = [
+      'Count the teeth in the conveyor hymn.',
+      'Do not kneel to the soft machinery.',
+      'When the pink wall sweats, the old ads are listening.',
+      'The cleanest relic is usually the most cursed.',
+      'Trash remembers the shape of every hand that failed it.',
+      'A saint made of plush saints still demand tribute.',
+      'The room only loves you while the fluorescents buzz.'
+    ];
+
+    const RELIC_VERBS = ['remembers', 'rejects', 'devours', 'blesses', 'misfiles', 'catalogs', 'ferments'];
+    const RELIC_ADJECTIVES = ['chlorinated', 'neon', 'obsolete', 'velvet', 'feral', 'fluorescent', 'sugar-burned'];
+    const RELIC_BODY_PARTS = ['mouth', 'thumb', 'shadow', 'spine', 'tag', 'teeth', 'dream'];
+    const AI_NAMES = {
+      chase: 'Hunter',
+      wander: 'Wanderer',
+      coward: 'Coward',
+      ambush: 'Ambusher',
+      sentinel: 'Sentinel',
+      knocker: 'Knocker',
+      sprinter: 'Burnout',
+      boss: 'Conglomerate'
+    };
+    const FLOOR_MODS = [
+      { id: 'standard', name: 'Mall Quiet', desc: 'A mostly stable stretch of buried retail.' },
+      { id: 'corrosion', name: 'Chemical Drift', desc: 'Leaking vats turn the walkways spiteful.' },
+      { id: 'inversion', name: 'Signal Inversion', desc: 'The place flips its palette and acts unfamiliar.' },
+      { id: 'patchwork', name: 'Patchwork Bloom', desc: 'Several buried zones have grown through each other.' },
+      { id: 'arc', name: 'Arc Lattice', desc: 'Timed electrical lanes rake the floor in ugly little sermons.' },
+      { id: 'rift', name: 'Void Folds', desc: 'Pocket tears in the structure misroute your body through black retail weather.' }
+    ];
+
+    const RELIC_COUPLETS = [
+      ['The atrium keeps a second mouth below the tile.', 'Gut Punch feeds it broken saints and warm plastic light.'],
+      ['A toy kiosk flowered teeth and called itself mercy.', 'Nobody corrected it, so the district learned hunger.'],
+      ['The escalators died mid-prayer and stayed folded inward.', 'Something under the grout kept finishing the sentence.'],
+      ['Token dust clings to the throat like artificial pollen.', 'Even now the arcade dreams in seizure colors.'],
+      ['A service corridor molted velvet mold and chrome spit.', 'The walls looked upholstered by a patient disease.'],
+      ['The food court went to bone without ever going quiet.', 'You can still hear trays sliding through the dark.'],
+      ['The lift cables hum as if braided from old nerves.', 'Every descent tightens someone else inside your chest.'],
+      ['Beneath the mall, the district stores its failed disguises.', 'Every relic is one more face it almost kept.'],
+      ['A buried carousel still rotates in the mildew of thought.', 'Its horses chew through wiring and remember applause.'],
+      ['The checkout lanes were sutured shut with pink tendon plastic.', 'Something patient kept counting after the shoppers died.'],
+      ['A rain of barcode confetti drifted through the service ducts.', 'Each strip carried a price for one unlived life.'],
+      ['Under the arcade carpet, the district grew a coral of quarters.', 'Children once fed it luck and called it skill.'],
+      ['The mannequins softened first around the jaw and knuckles.', 'By dawn they had learned the etiquette of teeth.'],
+      ['Old freezer doors hang open like silver confessionals.', 'The cold is gone, but the posture of mourning remains.'],
+      ['The grout around this shard is warm with secondhand metabolism.', 'Something deeper keeps trying to hatch a cathedral from trash.'],
+      ['A velvet banner fused to the wall and sprouted capillaries.', 'Now the sale never ends, only mutates.'],
+      ['In Peel District, broken saints are mulched into insulation.', 'The walls become devout whenever the power surges.'],
+      ['A drowned kiosk keeps offering maps to places that were eaten.', 'The arrows still point deeper.'],
+      ['The relic tastes faintly of battery sugar and funeral dust.', 'Your tongue decides not to report this to the rest of you.'],
+      ['One wing of the mall molted into a fungal embassy.', 'Its ambassadors bow by releasing spores.'],
+      ['The maintenance tunnels are stitched with shopping-bag membranes.', 'Wind passing through them sounds almost maternal.'],
+      ['Somewhere below, Zang rehearses itself in fluorescent organs.', 'These fragments are only the dandruff of the dream.'],
+      ['A plush saint was compacted into the shape of a warning sigil.', 'Even flattened, it still felt judgmental.'],
+      ['This fragment slept inside a nest of tags and chrome lint.', 'When touched, the whole floor seemed to hold its breath.']
+    ];
+
+
+    let rng;
+    let boardCells = [];
+    let map = [];
+    let rooms = [];
+    let floorCells = [];
+    let entities = [];
+    let player = null;
+    let relic = null;
+    let exitGate = null;
+    let biome = null;
+    let floorNumber = 1;
+    let bestFloorThisSession = 1;
+    try {
+      const storedBestFloor = Number(sessionStorage.getItem('trashland_best_floor') || '1');
+      if (Number.isFinite(storedBestFloor) && storedBestFloor > 0) {
+        bestFloorThisSession = storedBestFloor;
+      }
+    } catch (e) {}
+
+    let gameOver = false;
+    let initialized = false;
+    let visible = new Set();
+    let explored = new Set();
+    let currentSeed = CONFIG.seed;
+    let pendingKillText = '';
+    let currentFloorMod = FLOOR_MODS[0];
+    let biomeMode = 'smooth';
+    let bossCores = new Map();
+    let portalLinks = [];
+    let turnCount = 0;
+    let floorNotes = [];
+    let pendingExplosionHits = new Set();
+
+    const elBoard = document.getElementById('board');
+    const elLog = document.getElementById('log');
+    const elHp = document.getElementById('hp');
+    const elArmor = document.getElementById('armor');
+    const elPower = document.getElementById('power');
+    const elThreat = document.getElementById('threat');
+    const elArtifact = document.getElementById('artifact-status');
+    const elDepth = document.getElementById('depth');
+    const elBombs = document.getElementById('bombs');
+    const elBestFloor = document.getElementById('best-floor');
+    const elBiomeName = document.getElementById('biome-name');
+    const elLoreModal = document.getElementById('lore-modal');
+    const elLoreTitle = document.getElementById('lore-title');
+    const elLoreBody = document.getElementById('lore-body');
+    const elBoot = document.getElementById('boot');
+
+    class RNG {
+      constructor(seed) {
+        this.seed = seed >>> 0;
+      }
+      next() {
+        this.seed = (1664525 * this.seed + 1013904223) >>> 0;
+        return this.seed / 4294967296;
+      }
+      int(min, max) {
+        return Math.floor(this.next() * (max - min + 1)) + min;
+      }
+      pick(arr) {
+        return arr[Math.floor(this.next() * arr.length)];
+      }
+      shuffle(arr) {
+        const clone = arr.slice();
+        for (let i = clone.length - 1; i > 0; i--) {
+          const j = Math.floor(this.next() * (i + 1));
+          const t = clone[i];
+          clone[i] = clone[j];
+          clone[j] = t;
+        }
+        return clone;
+      }
+    }
+
+    function bootError(msg, extra = '') {
+      elBoot.className = 'error';
+      elBoot.innerHTML = `<div><strong>Boot failed.</strong><br/>${msg}${extra ? `<code>${extra}</code>` : ''}</div>`;
+      elBoot.style.display = 'flex';
+    }
+
+    window.addEventListener('error', (e) => {
+      const text = e && (e.message || String(e.error || e)) ? (e.message || String(e.error || e)) : 'Unknown error';
+      bootError('A runtime error occurred.', text);
+    });
+
+    function key(x, y) {
+      return `${x},${y}`;
+    }
+
+    function inBounds(x, y) {
+      return x >= 0 && y >= 0 && x < CONFIG.width && y < CONFIG.height;
+    }
+
+    function randItem(arr) {
+      return rng.pick(arr);
+    }
+
+    function varyColor(hex, amount = 22) {
+      const num = parseInt(hex.slice(1), 16);
+      const r = Math.max(0, Math.min(255, ((num >> 16) & 255) + rng.int(-amount, amount)));
+      const g = Math.max(0, Math.min(255, ((num >> 8) & 255) + rng.int(-amount, amount)));
+      const b = Math.max(0, Math.min(255, (num & 255) + rng.int(-amount, amount)));
+      return `#${[r, g, b].map(v => v.toString(16).padStart(2, '0')).join('')}`;
+    }
+
+    function enemyDeathLine(name, personLike = false, oneShot = false) {
+      return randItem(oneShot ? ENEMY_FINISHES : ENEMY_DEATHS)
+        .replaceAll('{name}', name)
+        .replaceAll('{pronoun}', personLike ? 'they' : 'it');
+    }
+
+    const BIOME_NAME_VARIANTS = {
+      plastic_dunes: ['Melt Atrium', 'Peel Galleria', 'Softcourt Ruins', 'Plastiglaze Halls', 'Toy Shelf Collapse', 'Warm Polymer Galleries'],
+      wire_cathedral: ['Service Spine', 'Conduit Nave', 'Switchyard Choir', 'Maintenance Catacombs', 'Underwire Gallery', 'Breaker Chapel'],
+      fungus_bloom: ['Bloom Cavern', 'Velvet Rot Garden', 'Spore Embassy', 'Mildew Court', 'Canker Arcade', 'Fungal Salon'],
+      bone_cache: ['Ossuary Concourse', 'Traygrave Hall', 'Food Court Catacombs', 'Ivory Spillway', 'Rib Market', 'Quiet Marrow Arcade'],
+      data_landfill: ['Arcade Midden', 'Decrepit Archive', 'Prize Vault Complex', 'Lowlight Simcade', 'Checksum Warrens', 'Broken Cabinet Borough']
+    };
+    const BIOME_FLAVOR_VARIANTS = {
+      plastic_dunes: ['Heat-warped signage peels from the walls in long sweet curls.', 'The aisles look softened, then hurriedly re-hardened by bad chemistry.'],
+      wire_cathedral: ['Old service shafts cross overhead like black ribs and harp strings.', 'Somewhere in the walls, unseen relays gossip in clicks and blue sparks.'],
+      fungus_bloom: ['The stone sweats perfume, spores, and a little bit of menace.', 'Every patch of color looks one breath away from becoming a colony.'],
+      bone_cache: ['The old dining quarter has gone solemn and architectural.', 'You feel watched by the posture of what remains, not the faces.'],
+      data_landfill: ['Ruined cabinets blink in half-languages under their coats of dust.', 'Prize tickets and dead pixels rot together in the corners.']
+    };
+
+    function chooseBiome() {
+      const base = rng.pick(BIOMES);
+      const variantNames = BIOME_NAME_VARIANTS[base.id] || [base.name];
+      const variantFlavor = BIOME_FLAVOR_VARIANTS[base.id] || [];
+      return {
+        ...base,
+        name: randItem(variantNames),
+        flavor: base.flavor.concat(variantFlavor)
+      };
+    }
+
+    function hashNoise(x, y, salt = 0) {
+      let n = (Math.imul(x + 11, 374761393) + Math.imul(y + 17, 668265263) + currentSeed + salt * 131) >>> 0;
+      n ^= n >>> 13;
+      n = Math.imul(n, 1274126177) >>> 0;
+      return ((n ^ (n >>> 16)) >>> 0) / 4294967295;
+    }
+
+    function chooseFloorMod() {
+      if (floorNumber === 1) return FLOOR_MODS.find(m => m.id === 'standard');
+      if (floorNumber >= 10 && floorNumber % 7 === 0) return FLOOR_MODS.find(m => m.id === 'arc');
+      if (floorNumber >= 6 && floorNumber % 5 === 0) return FLOOR_MODS.find(m => m.id === 'patchwork');
+      if (floorNumber >= 5 && floorNumber % 4 === 0) return FLOOR_MODS.find(m => m.id === 'inversion');
+      if (floorNumber >= 6 && floorNumber % 3 === 0 && rng.next() < 0.6) return FLOOR_MODS.find(m => m.id === 'rift');
+      if (floorNumber % 2 === 0) return FLOOR_MODS.find(m => m.id === 'corrosion');
+      if (floorNumber >= 8 && rng.next() < 0.22) return FLOOR_MODS.find(m => m.id === 'arc');
+      if (floorNumber >= 5 && rng.next() < 0.28) return FLOOR_MODS.find(m => m.id === 'patchwork');
+      return FLOOR_MODS.find(m => m.id === 'standard');
+    }
+
+    function tileBiomeAt(x, y, baseBiome) {
+      const macro = hashNoise(Math.floor(x / 9), Math.floor(y / 7), 17 + floorNumber);
+      const meso = hashNoise(Math.floor(x / 4), Math.floor(y / 4), 29 + floorNumber);
+      const micro = hashNoise(x, y, 91 + floorNumber);
+      let drift = 0;
+      if (biomeMode === 'patchwork') drift += 0.32;
+      if (floorNumber >= 8) drift += 0.05;
+      if (floorNumber >= 14) drift += 0.06;
+      if (macro > 0.78 - drift || (meso > 0.86 - drift * 0.8) || (micro > 0.97 - drift * 0.5)) {
+        return BIOMES[Math.floor(hashNoise(x + 13, y + 7, 111) * BIOMES.length) % BIOMES.length];
+      }
+      return baseBiome;
+    }
+
+    function applyPaletteMode(color, x, y, type) {
+      const macro = hashNoise(Math.floor(x / 8), Math.floor(y / 6), type === 'wall' ? 31 : 47);
+      const meso = hashNoise(Math.floor(x / 3), Math.floor(y / 3), type === 'wall' ? 63 : 71);
+      const micro = hashNoise(x, y, type === 'wall' ? 83 : 97);
+      let variance = biomeMode === 'noisy' ? 44 : biomeMode === 'patchwork' ? 38 : 22;
+      variance += Math.min(24, Math.floor(floorNumber * 1.4));
+      let out = varyColor(color, variance);
+      if (biomeMode === 'invert') {
+        const num = parseInt(out.slice(1), 16);
+        const r = 255 - ((num >> 16) & 255);
+        const g = 255 - ((num >> 8) & 255);
+        const b = 255 - (num & 255);
+        out = `#${[r,g,b].map(v => v.toString(16).padStart(2,'0')).join('')}`;
+      }
+      if (macro > 0.66) out = varyColor(out, 36 + Math.floor(floorNumber * 0.9));
+      if (meso > 0.78) out = varyColor(out, 24);
+      if (micro > 0.93) out = varyColor(out, 60);
+      return out;
+    }
+
+    function mutateWallGlyph(baseGlyph, x, y, liveBiome) {
+      const crust = ['#', '▓', '▒', '╬', '╳', '░', '%', '*', '≋', '¤', '╣', '╠', '▣', '▤', '▥', '▧'];
+      const growth = ['~', '≈', '§', '◈', '◊', '╪'];
+      const macro = hashNoise(Math.floor(x / 6), Math.floor(y / 6), 203 + floorNumber);
+      const meso = hashNoise(Math.floor(x / 2), Math.floor(y / 2), 233 + floorNumber);
+      const micro = hashNoise(x, y, 333 + floorNumber);
+      if (macro > 0.58 || meso > Math.max(0.50, 0.78 - floorNumber * 0.02)) {
+        const foreign = BIOMES[Math.floor(hashNoise(x + 7, y + 11, 131) * BIOMES.length) % BIOMES.length];
+        const pool = [...liveBiome.wallGlyphs, ...foreign.wallGlyphs, ...crust, ...(micro > 0.82 ? growth : [])];
+        return pool[Math.floor(hashNoise(x * 2, y * 2, 71) * pool.length) % pool.length];
+      }
+      if (micro > 0.88) {
+        const pool = [...crust, ...growth];
+        return pool[Math.floor(hashNoise(x + 3, y + 9, 99) * pool.length) % pool.length];
+      }
+      return baseGlyph;
+    }
+
+    function mutateFloorGlyph(baseGlyph, x, y, liveBiome) {
+      const grit = ['.', ',', '·', ':', ';', '°', '`', '•', '=', '_', '˙'];
+      const ooze = ['~', '≈', '∿', '¤'];
+      const macro = hashNoise(Math.floor(x / 8), Math.floor(y / 8), 281 + floorNumber);
+      const meso = hashNoise(Math.floor(x / 3), Math.floor(y / 3), 311 + floorNumber);
+      const micro = hashNoise(x, y, 401 + floorNumber);
+      if (macro > 0.62 || (biomeMode === 'patchwork' && meso > 0.46) || micro > Math.max(0.90, 0.98 - floorNumber * 0.012)) {
+        const foreign = BIOMES[Math.floor(hashNoise(x + 13, y + 17, 211) * BIOMES.length) % BIOMES.length];
+        const pool = [...liveBiome.floorGlyphs, ...foreign.floorGlyphs, ...grit, ...(meso > 0.75 ? ooze : [])];
+        return pool[Math.floor(hashNoise(x * 3, y * 3, 181) * pool.length) % pool.length];
+      }
+      if (micro > 0.84) {
+        const pool = [...grit, ...ooze];
+        return pool[Math.floor(hashNoise(x + 19, y + 2, 55) * pool.length) % pool.length];
+      }
+      return baseGlyph;
+    }
+    function createTile(type, biomeRef, x = 0, y = 0) {
+      const liveBiome = tileBiomeAt(x, y, biomeRef);
+      if (type === 'wall') {
+        const baseGlyph = rng.pick(liveBiome.wallGlyphs);
+        return {
+          kind: 'wall',
+          glyph: mutateWallGlyph(baseGlyph, x, y, liveBiome),
+          color: applyPaletteMode(liveBiome.wallColor, x, y, 'wall'),
+          blocksMove: true,
+          biomeId: liveBiome.id
+        };
+      }
+      const baseGlyph = rng.pick(liveBiome.floorGlyphs);
+      return {
+        kind: 'floor',
+        glyph: mutateFloorGlyph(baseGlyph, x, y, liveBiome),
+        color: applyPaletteMode(liveBiome.floorColor, x, y, 'floor'),
+        blocksMove: false,
+        biomeId: liveBiome.id
+      };
+    }
+
+    function tileArcActive(tile) {
+      if (!tile || tile.kind !== 'arc') return false;
+      const period = tile.period || 6;
+      const activeWidth = tile.activeWidth || 2;
+      return ((turnCount + (tile.phase || 0) + (tile.lineIndex || 0)) % period) < activeWidth;
+    }
+
+    function tilePresentation(tile) {
+      if (!tile) return { glyph: ' ', color: CONFIG.colors.unseen };
+      if (tile.kind === 'arc') {
+        if (tileArcActive(tile)) {
+          return { glyph: tile.glyphActive || 'ϟ', color: tile.colorActive || '#fde047' };
+        }
+        return { glyph: tile.baseGlyph || '·', color: tile.baseColor || tile.color || CONFIG.colors.seen };
+      }
+      return { glyph: tile.glyph, color: tile.color };
+    }
+
+    function bossTemplate() {
+      const templates = [
+        { title: 'Heap Prince', glyphs: ['Ω','Ж','▓','╬'], color: '#f97316', moveRate: 2, armorPierce: 1, type: 'heap' },
+        { title: 'Atrium Knot', glyphs: ['◈','◉','¤','§'], color: '#fb7185', moveRate: 3, armorPierce: 1, type: 'heap' },
+        { title: 'Mall Saint', glyphs: ['†','‡','◊','◌'], color: '#f59e0b', moveRate: 2, armorPierce: 2, type: 'heap' },
+        { title: 'Service Warden', glyphs: ['╣','╠','╩','╦'], color: '#38bdf8', moveRate: 3, armorPierce: 1, type: 'heap' },
+        { title: 'Gut Punch Bloomheart', glyphs: ['✶','✷','✹','✸'], color: '#c084fc', moveRate: 2, armorPierce: 2, type: 'heap' },
+        { title: 'Token Basilica', glyphs: ['0','1','8','&'], color: '#22d3ee', moveRate: 2, armorPierce: 1, type: 'heap' },
+        { title: 'Rubble Choir', glyphs: ['▓','▒','%','*'], color: '#ef4444', moveRate: 3, armorPierce: 2, type: 'heap' },
+        { title: 'Concourse Maw', glyphs: ['C','◐','◑','☍'], color: '#f43f5e', moveRate: 2, armorPierce: 2, type: 'heap' },
+        { title: 'Receipt Seraph', glyphs: ['S','≈','~','∿','§','◦'], color: '#f472b6', moveRate: 2, armorPierce: 2, type: 'serpent' },
+        { title: 'Turnstile Serpent', glyphs: ['Q','c','s','z','~','`'], color: '#2dd4bf', moveRate: 2, armorPierce: 2, type: 'serpent' },
+        { title: 'Gut Punch Ribbon', glyphs: ['V','x','≈','∿','¤','°'], color: '#a78bfa', moveRate: 3, armorPierce: 3, type: 'serpent' }
+      ];
+      return randItem(templates);
+    }
+
+    function spawnBigHeal(x, y) {
+      if (getEntityAt(x, y) || ['acid','portal','arc'].includes(map[y][x].kind)) return false;
+      entities.push(makeEntity({
+        id: `big-heal-${x}-${y}-${rng.int(1, 99999)}`,
+        name: 'Cathedral jelly',
+        x,
+        y,
+        glyph: '✚',
+        color: '#86efac',
+        blocks: false,
+        kind: 'bigheal'
+      }));
+      return true;
+    }
+
+    function spawnBombPickup(x, y) {
+      if (getEntityAt(x, y) || ['acid','portal','arc'].includes(map[y][x].kind)) return false;
+      entities.push(makeEntity({
+        id: `bomb-${x}-${y}-${rng.int(1, 99999)}`,
+        name: 'Charge fruit',
+        x,
+        y,
+        glyph: '*',
+        color: '#fca5a5',
+        blocks: false,
+        kind: 'bombPickup'
+      }));
+      return true;
+    }
+
+    function generateRelicLore() {
+      const adj = randItem(RELIC_ADJECTIVES);
+      const noun = randItem(biome.relicNouns);
+      const couplet = randItem(RELIC_COUPLETS);
+      return {
+        title: `Recovered Fragment: ${adj} ${noun}`,
+        body: `${couplet[0]}
+${couplet[1]}`
+      };
+    }
+
+    function log(message) {
+      const div = document.createElement('div');
+      div.className = 'log-line';
+      div.textContent = message;
+      elLog.appendChild(div);
+      elLog.scrollTop = elLog.scrollHeight;
+    }
+
+    function createBoard() {
+      elBoard.innerHTML = '';
+      boardCells = [];
+      for (let y = 0; y < CONFIG.height; y++) {
+        const row = [];
+        for (let x = 0; x < CONFIG.width; x++) {
+          const cell = document.createElement('span');
+          cell.className = 'cell';
+          cell.textContent = ' ';
+          elBoard.appendChild(cell);
+          row.push(cell);
+        }
+        boardCells.push(row);
+      }
+      console.assert(boardCells.length === CONFIG.height, 'Board should have correct height');
+      console.assert(boardCells[0].length === CONFIG.width, 'Board should have correct width');
+    }
+
+    function getEntityAt(x, y, ignoreId = null) {
+      return entities.find(e => e && !e.dead && e.id !== ignoreId && e.x === x && e.y === y);
+    }
+
+    function setFloor(x, y) {
+      map[y][x] = createTile('floor', biome, x, y);
+    }
+
+    function carveRoom(room) {
+      for (let y = room.y; y < room.y + room.h; y++) {
+        for (let x = room.x; x < room.x + room.w; x++) {
+          setFloor(x, y);
+        }
+      }
+    }
+
+    function carveHTunnel(x1, x2, y) {
+      const start = Math.min(x1, x2);
+      const end = Math.max(x1, x2);
+      for (let x = start; x <= end; x++) setFloor(x, y);
+    }
+
+    function carveVTunnel(y1, y2, x) {
+      const start = Math.min(y1, y2);
+      const end = Math.max(y1, y2);
+      for (let y = start; y <= end; y++) setFloor(x, y);
+    }
+
+    function roomCenter(room) {
+      return {
+        x: Math.floor(room.x + room.w / 2),
+        y: Math.floor(room.y + room.h / 2)
+      };
+    }
+
+    function roomsOverlap(a, b) {
+      return !(
+        a.x + a.w + 1 < b.x ||
+        b.x + b.w + 1 < a.x ||
+        a.y + a.h + 1 < b.y ||
+        b.y + b.h + 1 < a.y
+      );
+    }
+
+    function buildMap() {
+      map = Array.from({ length: CONFIG.height }, (_, y) =>
+        Array.from({ length: CONFIG.width }, (_, x) => createTile('wall', biome, x, y))
+      );
+      rooms = [];
+
+      for (let i = 0; i < CONFIG.roomAttempts; i++) {
+        const w = rng.int(CONFIG.minRoom, CONFIG.maxRoom);
+        const h = rng.int(CONFIG.minRoom, CONFIG.maxRoom);
+        const x = rng.int(1, CONFIG.width - w - 2);
+        const y = rng.int(1, CONFIG.height - h - 2);
+        const room = { x, y, w, h };
+        if (rooms.some(existing => roomsOverlap(existing, room))) continue;
+        carveRoom(room);
+        if (rooms.length > 0) {
+          const prev = roomCenter(rooms[rooms.length - 1]);
+          const next = roomCenter(room);
+          if (rng.next() < 0.5) {
+            carveHTunnel(prev.x, next.x, prev.y);
+            carveVTunnel(prev.y, next.y, next.x);
+          } else {
+            carveVTunnel(prev.y, next.y, prev.x);
+            carveHTunnel(prev.x, next.x, next.y);
+          }
+        }
+        rooms.push(room);
+      }
+
+      floorCells = [];
+      for (let y = 0; y < CONFIG.height; y++) {
+        for (let x = 0; x < CONFIG.width; x++) {
+          if (!map[y][x].blocksMove) floorCells.push({ x, y, k: key(x, y) });
+        }
+      }
+
+      console.assert(rooms.length > 2, 'Map should produce multiple rooms');
+      console.assert(floorCells.length > 0, 'Map should have floor cells');
+      if (floorCells.length === 0) throw new Error('Map generation failed');
+
+      const safe = new Set();
+      for (const room of [rooms[0], rooms[rooms.length - 1]]) {
+        for (let y = room.y - 1; y <= room.y + room.h; y++) {
+          for (let x = room.x - 1; x <= room.x + room.w; x++) {
+            if (inBounds(x, y)) safe.add(key(x, y));
+          }
+        }
+      }
+      const corrosionBonus = currentFloorMod.id === 'corrosion' ? 8 : 0;
+      const dynamicAcidCount = CONFIG.acidCount + Math.min(22, floorNumber * 2) + corrosionBonus + (floorNumber >= 12 ? 5 : 0);
+      const hazardPool = rng.shuffle(floorCells).filter(c => !safe.has(c.k));
+      for (const c of hazardPool.slice(0, dynamicAcidCount)) {
+        map[c.y][c.x] = {
+          kind: 'acid',
+          glyph: rng.pick(['~', '≈', '∿']),
+          color: applyPaletteMode('#9fda3a', c.x, c.y, 'floor'),
+          blocksMove: false,
+          biomeId: biome.id,
+          damage: floorNumber >= 12 ? 3 : floorNumber >= 5 ? 2 : 1
+        };
+      }
+
+      floorNotes = [];
+      portalLinks = [];
+      const portalShouldAppear = floorNumber >= 5 && (currentFloorMod.id === 'rift' || rng.next() < Math.min(0.78, 0.34 + floorNumber * 0.025));
+      if (portalShouldAppear) {
+        const portalPool = rng.shuffle(floorCells).filter(c => !safe.has(c.k) && map[c.y][c.x].kind === 'floor');
+        const portalCount = Math.min(CONFIG.portalCount, Math.max(2, Math.min(6, 2 + Math.floor(floorNumber / 6))), portalPool.length);
+        const chosen = portalPool.slice(0, portalCount);
+        portalLinks = chosen.map(c => ({ x: c.x, y: c.y, k: c.k }));
+        for (const c of chosen) {
+          map[c.y][c.x] = {
+            kind: 'portal',
+            glyph: rng.pick(['◌', '◎', '◍', '⊚']),
+            color: biomeMode === 'invert' ? '#f9a8d4' : varyColor('#7dd3fc', 24),
+            blocksMove: false,
+            biomeId: biome.id
+          };
+        }
+        floorNotes.push('Void folds shimmer through this floor.');
+      }
+
+      const arcShouldAppear = floorNumber >= 7 && (currentFloorMod.id === 'arc' || rng.next() < Math.min(0.6, 0.12 + floorNumber * 0.02));
+      if (arcShouldAppear) {
+        const lanes = Math.min(5, 2 + Math.floor(floorNumber / 6) + (currentFloorMod.id === 'arc' ? 1 : 0));
+        let carved = 0;
+        const axisChoices = rng.shuffle(['h','v','h','v','h']);
+        for (let attempt = 0; attempt < lanes * 7 && carved < lanes; attempt++) {
+          const axis = axisChoices[attempt % axisChoices.length];
+          if (axis === 'h') {
+            const y = rng.int(2, CONFIG.height - 3);
+            const xs = [];
+            for (let x = 2; x < CONFIG.width - 2; x++) {
+              const t = map[y][x];
+              if (!t.blocksMove && !safe.has(key(x, y)) && t.kind === 'floor') xs.push(x);
+            }
+            if (xs.length < 8) continue;
+            for (let i, start = 0; start < xs.length; start = i + 1) {
+              for (i = start; i < xs.length && (i === start || xs[i] === xs[i-1] + 1); i++);
+              const seg = xs.slice(start, i);
+              if (seg.length < 8) continue;
+              const use = seg.slice(1, seg.length - 1);
+              use.forEach((x, idx) => {
+                const old = map[y][x];
+                map[y][x] = {
+                  kind: 'arc',
+                  baseGlyph: old.glyph,
+                  baseColor: old.color,
+                  glyphActive: rng.pick(['ϟ','-','~']),
+                  colorActive: applyPaletteMode('#fde047', x, y, 'floor'),
+                  blocksMove: false,
+                  biomeId: biome.id,
+                  damage: floorNumber >= 12 ? 4 : 3,
+                  period: floorNumber >= 12 ? 4 : 5,
+                  activeWidth: floorNumber >= 12 ? 3 : 2,
+                  phase: rng.int(0, 4),
+                  lineIndex: idx
+                };
+              });
+              carved += 1;
+              break;
+            }
+          } else {
+            const x = rng.int(2, CONFIG.width - 3);
+            const ys = [];
+            for (let y = 2; y < CONFIG.height - 2; y++) {
+              const t = map[y][x];
+              if (!t.blocksMove && !safe.has(key(x, y)) && t.kind === 'floor') ys.push(y);
+            }
+            if (ys.length < 8) continue;
+            for (let i, start = 0; start < ys.length; start = i + 1) {
+              for (i = start; i < ys.length && (i === start || ys[i] === ys[i-1] + 1); i++);
+              const seg = ys.slice(start, i);
+              if (seg.length < 8) continue;
+              const use = seg.slice(1, seg.length - 1);
+              use.forEach((y, idx) => {
+                const old = map[y][x];
+                map[y][x] = {
+                  kind: 'arc',
+                  baseGlyph: old.glyph,
+                  baseColor: old.color,
+                  glyphActive: rng.pick(['|','ϟ','¦']),
+                  colorActive: applyPaletteMode('#fbbf24', x, y, 'floor'),
+                  blocksMove: false,
+                  biomeId: biome.id,
+                  damage: floorNumber >= 12 ? 4 : 3,
+                  period: floorNumber >= 12 ? 4 : 5,
+                  activeWidth: floorNumber >= 12 ? 3 : 2,
+                  phase: rng.int(0, 4),
+                  lineIndex: idx
+                };
+              });
+              carved += 1;
+              break;
+            }
+          }
+        }
+        if (carved > 0) floorNotes.push('Static lanes sweep the district in timed lines.');
+      }
+    }
+
+    function makeEntity(data) {
+      return { ...data, dead: false };
+    }
+
+    function createFreshPlayer() {
+      return {
+        id: 'player-core',
+        hp: 10,
+        maxHp: 10,
+        attack: 3,
+        armor: 1,
+        level: 1,
+        relicsRecovered: 0,
+        floorClears: 0,
+        invulnerableSteps: 0,
+        knockResistSteps: 0,
+        relicBoonLabel: '',
+        bossKills: 0,
+        bombs: 1
+      };
+    }
+
+    function computeThreatLevel() {
+      return CONFIG.enemyCount + floorNumber * 2 + Math.floor(floorNumber / 2) + (currentFloorMod.id === 'patchwork' ? 2 : 0) + Math.max(0, floorNumber - 10);
+    }
+
+    function enemyStatsForFloor() {
+      return {
+        hpMin: 4 + Math.floor((floorNumber - 1) * 0.8),
+        hpMax: 7 + Math.floor((floorNumber - 1) * 1.15),
+        attackMin: 1 + Math.floor((floorNumber - 1) / 2.9) + (floorNumber >= 14 ? 1 : 0) + (floorNumber >= 22 ? 1 : 0),
+        attackMax: 2 + Math.floor((floorNumber - 1) / 2.15) + (floorNumber >= 12 ? 1 : 0) + (floorNumber >= 20 ? 1 : 0)
+      };
+    }
+
+    function chooseEnemyAI() {
+      const roll = rng.next();
+      if (roll < 0.14) return 'coward';
+      if (roll < 0.30) return 'wander';
+      if (roll < 0.52) return 'chase';
+      if (roll < 0.67) return 'ambush';
+      if (roll < 0.80) return 'sentinel';
+      if (roll < 0.90) return 'sprinter';
+      return 'knocker';
+    }
+
+    function randomEmptyCell(occupied) {
+      const pool = rng.shuffle(floorCells);
+      for (const c of pool) {
+        if (!occupied.has(c.k)) return c;
+      }
+      return floorCells[0];
+    }
+
+    function randomRoomCell(room, occupied) {
+      const candidates = [];
+      for (let y = room.y; y < room.y + room.h; y++) {
+        for (let x = room.x; x < room.x + room.w; x++) {
+          const k = key(x, y);
+          if (!occupied.has(k) && !map[y][x].blocksMove) candidates.push({ x, y, k });
+        }
+      }
+      return candidates.length ? randItem(candidates) : randomEmptyCell(occupied);
+    }
+
+
+    function randomAdjacentFloor(anchorEntity, occupied) {
+      if (!anchorEntity) return null;
+      const dirs = rng.shuffle([[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,1],[1,-1],[-1,-1]]);
+      for (const [dx, dy] of dirs) {
+        const x = anchorEntity.x + dx;
+        const y = anchorEntity.y + dy;
+        const k = key(x, y);
+        if (!inBounds(x, y) || occupied.has(k)) continue;
+        if (['acid', 'portal', 'arc'].includes(map[y][x].kind) || map[y][x].blocksMove) continue;
+        return { x, y, k };
+      }
+      return null;
+    }
+
+    function findBossRoom(occupied) {
+      const candidates = rooms.filter(room => room.w >= 6 && room.h >= 6 && room !== rooms[0] && room !== rooms[rooms.length - 1]);
+      if (!candidates.length) return null;
+      return rng.pick(candidates);
+    }
+
+    function spawnBoss(room, occupied) {
+      const bx = Math.max(room.x + 1, Math.min(room.x + room.w - 3, Math.floor(room.x + room.w / 2) - 1));
+      const by = Math.max(room.y + 1, Math.min(room.y + room.h - 3, Math.floor(room.y + room.h / 2) - 1));
+      const coreId = `boss-${floorNumber}`;
+      const template = bossTemplate();
+      const isSerpent = template.type === 'serpent';
+      const baseHp = (isSerpent ? 24 : 18) + floorNumber * (isSerpent ? 6 : 5);
+      const bossIdentity = makeBossIdentity(template);
+      const core = {
+        id: coreId,
+        hp: baseHp,
+        maxHp: baseHp,
+        attack: (isSerpent ? 2 : 4) + Math.floor(floorNumber / 2),
+        headAttack: 5 + Math.floor(floorNumber / 2.4),
+        bodyAttack: 1 + Math.floor(floorNumber / 10),
+        name: bossIdentity.name,
+        personLike: bossIdentity.personLike,
+        glyphs: template.glyphs.slice(),
+        color: template.color,
+        moveRate: template.moveRate,
+        armorPierce: template.armorPierce,
+        lastActTurn: -1,
+        type: template.type || 'heap',
+        trail: []
+      };
+      if (isSerpent) core.glyphs[0] = 'Q';
+      bossCores.set(coreId, core);
+      if (isSerpent) {
+        const startY = Math.max(room.y + 1, Math.min(room.y + room.h - 2, Math.floor(room.y + room.h / 2)));
+        const startX = Math.max(room.x + 1, Math.min(room.x + room.w - 7, Math.floor(room.x + room.w / 2) - 3));
+        for (let i = 0; i < 6; i++) {
+          const x = startX + i;
+          const y = startY;
+          occupied.add(key(x, y));
+          entities.push(makeEntity({
+            id: `${coreId}-seg-${i}`,
+            bossCoreId: coreId,
+            bossIndex: i,
+            bossHead: i === 0,
+            name: core.name,
+            personLike: core.personLike,
+            x, y,
+            glyph: core.glyphs[i % core.glyphs.length],
+            color: applyPaletteMode(core.color, x, y, 'wall'),
+            hp: core.hp,
+            maxHp: core.maxHp,
+            attack: i === 0 ? core.headAttack : core.bodyAttack,
+            minDamage: i === 0 ? 3 : 1,
+            armorPierce: i === 0 ? core.armorPierce + 1 : 0,
+            blocks: true,
+            kind: 'enemy',
+            elite: true,
+            boss: true,
+            ai: 'boss',
+            aiName: 'Serpent',
+            homeX: startX,
+            homeY: startY,
+            asleep: false,
+            patience: 0,
+            knockback: i === 0 ? 1 : 1,
+            knockCooldown: 0
+          }));
+        }
+        return core;
+      }
+      const coords = [[bx, by], [bx+1, by], [bx, by+1], [bx+1, by+1]];
+      coords.forEach(([x,y], i) => {
+        occupied.add(key(x,y));
+        entities.push(makeEntity({
+          id: `${coreId}-seg-${i}`,
+          bossCoreId: coreId,
+          bossIndex: i,
+          bossHead: false,
+          name: core.name,
+          personLike: core.personLike,
+          x, y,
+          glyph: core.glyphs[i],
+          color: applyPaletteMode(core.color, x, y, 'wall'),
+          hp: core.hp,
+          maxHp: core.maxHp,
+          attack: core.attack,
+          minDamage: 2,
+          armorPierce: core.armorPierce,
+          blocks: true,
+          kind: 'enemy',
+          elite: true,
+          boss: true,
+          ai: 'boss',
+          aiName: 'Conglomerate',
+          homeX: bx,
+          homeY: by,
+          asleep: false,
+          patience: 0,
+          knockback: 1,
+          knockCooldown: 0
+        }));
+      });
+      return core;
+    }
+
+    function spawnElite(room, occupied, idx) {
+      const pos = randomRoomCell(room, occupied);
+      occupied.add(pos.k);
+      const ai = randItem(['knocker', 'sentinel', floorNumber >= 8 ? 'ambush' : 'sentinel']);
+      const identity = makeEliteIdentity(randItem(biome.enemyNames));
+      entities.push(makeEntity({ id: `elite-${floorNumber}-${idx}`, name: identity.name, personLike: identity.personLike, x: pos.x, y: pos.y, glyph: rng.pick(['Ω','Ж','M','&','Ψ','Δ']), color: applyPaletteMode('#fb7185', pos.x, pos.y, 'wall'), hp: 9 + floorNumber * 2, maxHp: 9 + floorNumber * 2, attack: 2 + Math.floor(floorNumber / 2.7), armorPierce: floorNumber >= 10 ? 1 : 0, blocks: true, kind: 'enemy', elite: true, ai, aiName: `Elite ${AI_NAMES[ai] || ai}`, homeX: pos.x, homeY: pos.y, asleep: false, patience: rng.int(2,5), knockback: ai === 'knocker' ? 1 : 0, knockCooldown: 0 }));
+    }
+
+    function getBossCore(entity) {
+      return entity && entity.bossCoreId ? bossCores.get(entity.bossCoreId) : null;
+    }
+
+    function spawnEntities() {
+      entities = [];
+      relic = null;
+      exitGate = null;
+
+      const occupied = new Set();
+      const startRoom = rooms[0];
+      const endRoom = rooms[rooms.length - 1];
+
+      const p = randomRoomCell(startRoom, occupied);
+      occupied.add(p.k);
+      if (!player) player = createFreshPlayer();
+      player = makeEntity({
+        ...player,
+        id: 'player',
+        name: 'You',
+        x: p.x,
+        y: p.y,
+        glyph: '@',
+        color: CONFIG.colors.player,
+        blocks: true
+      });
+      entities.push(player);
+
+      const relicRoom = rooms[Math.max(1, rooms.length - 2)] || endRoom;
+      const exitRoom = rng.shuffle(rooms.slice(1)).sort((a, b) => {
+        const ac = roomCenter(a);
+        const bc = roomCenter(b);
+        const rc = roomCenter(relicRoom);
+        return (Math.abs(bc.x - rc.x) + Math.abs(bc.y - rc.y)) - (Math.abs(ac.x - rc.x) + Math.abs(ac.y - rc.y));
+      })[0] || endRoom;
+
+      const relicCell = randomRoomCell(relicRoom, occupied);
+      occupied.add(relicCell.k);
+      relic = makeEntity({
+        id: 'relic',
+        name: 'Relic',
+        x: relicCell.x,
+        y: relicCell.y,
+        glyph: '&',
+        color: CONFIG.colors.relic,
+        blocks: false,
+        recovered: false,
+        lore: generateRelicLore(),
+      });
+      entities.push(relic);
+
+      let exitCell = randomRoomCell(exitRoom, occupied);
+      const fallbackExit = rng.shuffle(floorCells).sort((a, b) => {
+        const da = Math.abs(a.x - relicCell.x) + Math.abs(a.y - relicCell.y);
+        const db = Math.abs(b.x - relicCell.x) + Math.abs(b.y - relicCell.y);
+        return db - da;
+      }).find(c => !occupied.has(c.k)) || exitCell;
+      if (Math.abs(exitCell.x - relicCell.x) + Math.abs(exitCell.y - relicCell.y) < 14) {
+        exitCell = fallbackExit;
+      }
+      occupied.add(exitCell.k);
+      exitGate = makeEntity({
+        id: 'exit',
+        name: 'Exit Gate',
+        x: exitCell.x,
+        y: exitCell.y,
+        glyph: '⟡',
+        color: CONFIG.colors.exit,
+        blocks: false,
+        open: false,
+      });
+      entities.push(exitGate);
+
+      const stats = enemyStatsForFloor();
+      const enemyBudget = Math.min(computeThreatLevel(), Math.max(5, rooms.length * 2 + Math.floor(floorNumber / 2)) + Math.floor(Math.max(0, floorNumber - 8) / 2));
+      const spawnRooms = rng.shuffle(rooms.slice(1, Math.max(2, rooms.length - 1)));
+      let roomIndex = 0;
+
+      const bossRoom = floorNumber % CONFIG.bossEvery === 0 ? findBossRoom(occupied) : null;
+      if (bossRoom) {
+        const boss = spawnBoss(bossRoom, occupied);
+        log(`A lair thickens somewhere below. ${boss.name} is awake${boss.type === 'serpent' ? ', long and roaming' : ''}.`);
+      }
+      const eliteRoom = spawnRooms[0] || rooms[Math.min(1, rooms.length - 1)];
+      spawnElite(eliteRoom, occupied, 0);
+      if (floorNumber >= 6) {
+        const secondEliteRoom = spawnRooms[1] || rooms[Math.min(2, rooms.length - 1)] || eliteRoom;
+        spawnElite(secondEliteRoom, occupied, 1);
+      }
+
+      for (let i = 0; i < enemyBudget; i++) {
+        const room = spawnRooms[roomIndex % spawnRooms.length] || rooms[rng.int(1, rooms.length - 1)];
+        roomIndex += 1;
+        const pos = randomRoomCell(room, occupied);
+        occupied.add(pos.k);
+        const enemyName = randItem(biome.enemyNames);
+        const enemyGlyph = randItem(biome.enemyGlyphs);
+        const enemyColor = randItem(biome.enemyColors);
+        const ai = chooseEnemyAI();
+        const identity = makeEnemyIdentity(enemyName);
+        entities.push(makeEntity({
+          id: `enemy-${i}`,
+          name: identity.name,
+          personLike: identity.personLike,
+          x: pos.x,
+          y: pos.y,
+          glyph: enemyGlyph,
+          color: enemyColor,
+          hp: rng.int(stats.hpMin, stats.hpMax),
+          maxHp: stats.hpMax,
+          attack: rng.int(stats.attackMin, stats.attackMax),
+          armorPierce: floorNumber >= 12 && rng.next() < 0.18 ? 1 : 0,
+          blocks: true,
+          kind: 'enemy',
+          ai,
+          aiName: AI_NAMES[ai] || ai,
+          homeX: pos.x,
+          homeY: pos.y,
+          asleep: ai === 'ambush',
+          patience: rng.int(3, 7),
+          knockback: ai === 'knocker' ? 1 : 0,
+          knockCooldown: 0
+        }));
+      }
+
+      spawnLooseDrops(occupied);
+      assertValidState();
+    }
+
+    function assertValidState() {
+      console.assert(!!player, 'Player should exist');
+      console.assert(!!relic, 'Relic should exist');
+      console.assert(!!exitGate, 'Exit should exist');
+      console.assert(Array.isArray(entities) && entities.length > 0, 'Entities should exist');
+      const seen = new Set();
+      for (const e of entities) {
+        console.assert(Number.isFinite(e.x) && Number.isFinite(e.y), 'Entity should have coordinates');
+        console.assert(inBounds(e.x, e.y), 'Entity should be in bounds');
+        console.assert(!map[e.y][e.x].blocksMove, 'Entity should be on floor');
+        if (e.blocks) {
+          const k = key(e.x, e.y);
+          console.assert(!seen.has(k), 'Blocking entities should not overlap');
+          seen.add(k);
+        }
+      }
+    }
+
+    function spawnLooseDrops(occupied) {
+      const healCount = CONFIG.floorHealCount + Math.floor(floorNumber / 3);
+      const armorCount = CONFIG.floorArmorCount + Math.floor(floorNumber / 4);
+      const powerCount = floorNumber >= 4 && rng.next() < 0.7 ? CONFIG.floorPowerCount : 0;
+      const validFloor = c => !occupied.has(c.k) && !['acid', 'portal', 'arc'].includes(map[c.y][c.x].kind);
+      const candidates = rng.shuffle(floorCells).filter(validFloor);
+      for (const c of candidates.slice(0, healCount)) {
+        occupied.add(c.k);
+        entities.push(makeEntity({
+          id: `heal-${c.k}-${rng.int(1, 99999)}`,
+          name: 'Med jelly',
+          x: c.x,
+          y: c.y,
+          glyph: '+',
+          color: varyColor(CONFIG.colors.heal, 20),
+          blocks: false,
+          kind: 'heal'
+        }));
+      }
+      const bigHealCandidates = rng.shuffle(floorCells).filter(validFloor);
+      if (floorNumber >= 5 && bigHealCandidates.length && rng.next() < Math.min(0.55, 0.12 + floorNumber * 0.02)) {
+        const c = bigHealCandidates[0];
+        occupied.add(c.k);
+        spawnBigHeal(c.x, c.y);
+      }
+
+      const armorCandidates = rng.shuffle(floorCells).filter(validFloor);
+      for (const c of armorCandidates.slice(0, armorCount)) {
+        occupied.add(c.k);
+        entities.push(makeEntity({
+          id: `armor-${c.k}-${rng.int(1, 99999)}`,
+          name: 'Molt plate',
+          x: c.x,
+          y: c.y,
+          glyph: ']',
+          color: varyColor('#fde68a', 16),
+          blocks: false,
+          kind: 'armor'
+        }));
+      }
+      let bombAnchorCell = null;
+      if (rng.next() < 0.5) bombAnchorCell = randomAdjacentFloor(relic, occupied);
+      if (!bombAnchorCell) bombAnchorCell = randomAdjacentFloor(exitGate, occupied);
+      const bombCandidates = rng.shuffle(floorCells).filter(validFloor);
+      const bombCell = bombAnchorCell || bombCandidates[0];
+      if (bombCell) {
+        occupied.add(bombCell.k);
+        spawnBombPickup(bombCell.x, bombCell.y);
+      }
+
+      const powerCandidates = rng.shuffle(floorCells).filter(validFloor);
+      for (const c of powerCandidates.slice(0, powerCount)) {
+        occupied.add(c.k);
+        entities.push(makeEntity({
+          id: `power-${c.k}-${rng.int(1, 99999)}`,
+          name: 'Feral idol',
+          x: c.x,
+          y: c.y,
+          glyph: '!',
+          color: varyColor('#fb923c', 20),
+          blocks: false,
+          kind: 'power'
+        }));
+      }
+    }
+
+    function maybeDropArmor(x, y) {
+      if (getEntityAt(x, y) || ['acid','portal','arc'].includes(map[y][x].kind) || rng.next() > 0.24) return;
+      entities.push(makeEntity({
+        id: `armor-${x}-${y}-${rng.int(1, 99999)}`,
+        name: 'Molt plate',
+        x,
+        y,
+        glyph: ']',
+        color: varyColor('#fde68a', 16),
+        blocks: false,
+        kind: 'armor'
+      }));
+    }
+
+    function maybeDropPower(x, y) {
+      if (floorNumber < 4 || getEntityAt(x, y) || ['acid','portal','arc'].includes(map[y][x].kind) || rng.next() > 0.12) return;
+      entities.push(makeEntity({
+        id: `power-${x}-${y}-${rng.int(1, 99999)}`,
+        name: 'Feral idol',
+        x,
+        y,
+        glyph: '!',
+        color: varyColor('#fb923c', 20),
+        blocks: false,
+        kind: 'power'
+      }));
+    }
+
+    function castLight(cx, cy, radius) {
+      const lit = new Set();
+      for (let y = cy - radius; y <= cy + radius; y++) {
+        for (let x = cx - radius - 2; x <= cx + radius + 2; x++) {
+          if (!inBounds(x, y)) continue;
+          const dx = (x - cx) / CONFIG.visionAspect;
+          const dy = y - cy;
+          if (dx * dx + dy * dy > radius * radius) continue;
+          lit.add(key(x, y));
+        }
+      }
+      return lit;
+    }
+
+    function updateVisibility() {
+      visible = castLight(player.x, player.y, CONFIG.fovRadius);
+      for (const k of visible) explored.add(k);
+    }
+
+    function renderBoardLayer() {
+      for (let y = 0; y < CONFIG.height; y++) {
+        for (let x = 0; x < CONFIG.width; x++) {
+          const tile = map[y][x];
+          const cell = boardCells[y][x];
+          const k = key(x, y);
+          if (!explored.has(k)) {
+            cell.textContent = ' ';
+            cell.style.color = CONFIG.colors.unseen;
+            cell.style.opacity = '1';
+            cell.style.filter = 'none';
+            continue;
+          }
+          const present = tilePresentation(tile);
+          cell.textContent = present.glyph;
+          cell.style.color = present.color;
+          if (visible.has(k)) {
+            cell.style.opacity = '1';
+            cell.style.filter = 'brightness(1.2)';
+          } else {
+            cell.style.opacity = '0.28';
+            cell.style.filter = 'brightness(0.55)';
+          }
+        }
+      }
+    }
+
+    function renderEntityLayer() {
+      for (const e of entities) {
+        if (!e || e.dead) continue;
+        const k = key(e.x, e.y);
+        if (!visible.has(k)) continue;
+        const cell = boardCells[e.y][e.x];
+        cell.textContent = e.glyph;
+        cell.style.color = e.color;
+        cell.style.opacity = '1';
+        cell.style.filter = 'brightness(1.25)';
+      }
+    }
+
+    function render() {
+      updateVisibility();
+      renderBoardLayer();
+      renderEntityLayer();
+      elHp.textContent = player ? `${player.hp} / ${player.maxHp}` : '0 / 0';
+      elArmor.textContent = player ? String(player.armor || 0) : '0';
+      elBombs.textContent = player ? String(player.bombs || 0) : '0';
+      elBestFloor.textContent = String(bestFloorThisSession);
+      elPower.textContent = player ? String(player.attack || 0) : '0';
+      elThreat.textContent = String(entities.filter(e => e && e.kind === 'enemy' && !e.dead).length);
+      elArtifact.textContent = relic && relic.recovered ? '1 / 1' : '0 / 1';
+      elDepth.textContent = String(floorNumber);
+      elBiomeName.textContent = biome ? `${biome.name} / ${currentFloorMod.name}` : 'Unknown';
+    }
+
+    function maybeDropHeal(x, y, force = false) {
+      if (getEntityAt(x, y)) return false;
+      if (!force && rng.next() < CONFIG.bigHealDropChance && floorNumber >= 6) {
+        if (spawnBigHeal(x, y)) {
+          log('A richer jelly congeals out of the ruin.');
+          return true;
+        }
+        return false;
+      }
+      if (!force && rng.next() > CONFIG.healDropChance) return false;
+      entities.push(makeEntity({
+        id: `heal-${x}-${y}-${rng.int(1, 99999)}`,
+        name: 'Med jelly',
+        x,
+        y,
+        glyph: '+',
+        color: CONFIG.colors.heal,
+        blocks: false,
+        kind: 'heal'
+      }));
+      log(force ? 'The kill shakes loose an emergency med jelly.' : 'A little med jelly plops onto the floor.');
+      return true;
+    }
+
+    function killEntity(defender) {
+      defender.dead = true;
+      defender.blocks = false;
+      if (defender.kind === 'enemy') {
+        log(pendingKillText || enemyDeathLine(defender.name, !!defender.personLike));
+        const emergencyThreshold = Math.max(3, Math.ceil((player?.maxHp || 10) * 0.25));
+        const emergencyHeal = !!(player && !gameOver && player.hp <= emergencyThreshold);
+        let forcedHealDropped = false;
+        if (emergencyHeal) {
+          forcedHealDropped = maybeDropHeal(defender.x, defender.y, true);
+        }
+        if (defender.ai === 'coward') {
+          if (!forcedHealDropped) maybeDropHeal(defender.x, defender.y);
+          maybeDropArmor(defender.x, defender.y);
+        } else if (defender.ai === 'sentinel') {
+          maybeDropArmor(defender.x, defender.y);
+          if (!forcedHealDropped && rng.next() < 0.15) maybeDropHeal(defender.x, defender.y);
+        } else {
+          if (!forcedHealDropped) maybeDropHeal(defender.x, defender.y);
+          maybeDropPower(defender.x, defender.y);
+        }
+      }
+      if (defender.id === 'player') {
+        gameOver = true;
+        log(randItem(DEATH_TEXTS));
+      }
+      pendingKillText = '';
+    }
+
+    function calculateDamage(attacker, defender) {
+      const desperationThreshold = Math.max(3, Math.ceil((attacker.maxHp || attacker.hp || 1) * 0.25));
+      const desperationBonus = attacker.id === 'player' && (attacker.hp || 0) <= desperationThreshold ? 1 : 0;
+      const raw = Math.max(1, attacker.attack + desperationBonus + rng.int(0, 1));
+      const armorPierce = Math.max(0, attacker.armorPierce || 0);
+      const armorValue = Math.max(0, (defender.armor || 0) - armorPierce);
+      const reduction = Math.min(raw - 1, Math.floor(armorValue * 0.95) + Math.floor(armorValue / 4));
+      const minDamage = Math.max(1, attacker.minDamage || 1, raw >= 11 ? 3 : raw >= 7 ? 2 : 1);
+      return {
+        raw,
+        reduction,
+        armorPierce,
+        final: Math.max(minDamage, raw - reduction)
+      };
+    }
+
+    function pushEntity(entity, dx, dy, sourceName = 'force') {
+      if (!entity || entity.dead || (!dx && !dy)) return false;
+      const nx = entity.x + dx;
+      const ny = entity.y + dy;
+      if (!inBounds(nx, ny) || map[ny][nx].blocksMove || getEntityAt(nx, ny, entity.id)) return false;
+      entity.x = nx;
+      entity.y = ny;
+      if (entity.id === 'player') log(`${sourceName} hurls you backward.`);
+      applyHazard(entity);
+      return true;
+    }
+
+    function attack(attacker, defender) {
+      if (defender.id === 'player' && (defender.invulnerableSteps || 0) > 0) {
+        log(`${attacker.name} glances off your temporary field.`);
+        return;
+      }
+      const bossCore = getBossCore(defender);
+      const hit = calculateDamage(attacker, bossCore || defender);
+      const hpBefore = bossCore ? bossCore.hp : defender.hp;
+      if (bossCore) {
+        bossCore.hp -= hit.final;
+        for (const seg of entities.filter(e => e && e.bossCoreId === defender.bossCoreId && !e.dead)) seg.hp = bossCore.hp;
+      } else {
+        defender.hp -= hit.final;
+      }
+      if (attacker.id === 'player') {
+        log(`You hit ${defender.name} for ${hit.final}${hit.reduction ? ` after ${hit.reduction} armor soak` : ''}${hit.armorPierce ? ` against ${hit.armorPierce} pierce` : ''}.`);
+      } else if (defender.id === 'player') {
+        log(`${attacker.name} hits you for ${hit.final}${hit.reduction ? ` through ${hit.reduction} soaked damage` : ''}${hit.armorPierce ? ` with ${hit.armorPierce} pierce` : ''}.`);
+      } else {
+        log(`${attacker.name} hits ${defender.name} for ${hit.final}.`);
+      }
+      const canKnock = (attacker.knockback || attacker.ai === 'knocker' || attacker.boss) && (attacker.knockCooldown || 0) <= 0 && !defender.dead;
+      if (canKnock) {
+        const dx = Math.sign(defender.x - attacker.x);
+        const dy = Math.sign(defender.y - attacker.y);
+        if (pushEntity(defender, dx, dy, attacker.name)) {
+          attacker.knockCooldown = attacker.boss ? 3 : 2;
+        }
+      }
+      const remaining = bossCore ? bossCore.hp : defender.hp;
+      if (remaining <= 0) {
+        pendingKillText = defender.kind === 'enemy' ? enemyDeathLine(defender.name, !!defender.personLike, hit.final >= hpBefore) : '';
+        if (bossCore) {
+          const rewardSpot = { x: defender.x, y: defender.y };
+          for (const seg of entities.filter(e => e && e.bossCoreId === defender.bossCoreId && !e.dead)) { seg.dead = true; seg.blocks = false; }
+          bossCores.delete(defender.bossCoreId);
+          if (player && attacker.id === 'player') {
+            player.invulnerableSteps = Math.max(player.invulnerableSteps || 0, 55);
+            player.bossKills = (player.bossKills || 0) + 1;
+            log('The heap-heart bursts. You gain a short invulnerable surge and a fresh killing edge.');
+          }
+          entities.push(makeEntity({
+            id: `boss-power-${rewardSpot.x}-${rewardSpot.y}-${rng.int(1,99999)}`,
+            name: 'Boss idol',
+            x: rewardSpot.x,
+            y: rewardSpot.y,
+            glyph: '!',
+            color: '#facc15',
+            blocks: false,
+            kind: 'power'
+          }));
+          log(`${defender.name} tears apart like a collapsed food court shrine and spills an idol.`);
+        }
+        killEntity(defender);
+      }
+    }
+
+    function tryPickup(entity) {
+      const item = entities.find(e => e && !e.dead && (e.kind === 'heal' || e.kind === 'bigheal' || e.kind === 'armor' || e.kind === 'power' || e.kind === 'bombPickup') && e.x === entity.x && e.y === entity.y);
+      if (!item) return;
+      if (item.kind === 'heal') {
+        const healAmount = 3 + Math.floor((entity.floorClears || 0) / 4);
+        entity.hp = Math.min(entity.maxHp, entity.hp + healAmount);
+        log(`You absorb a med jelly and recover ${healAmount} HP.`);
+      } else if (item.kind === 'bigheal') {
+        const healAmount = 6 + Math.floor((entity.floorClears || 0) / 3);
+        entity.hp = Math.min(entity.maxHp, entity.hp + healAmount);
+        log(`You crack a cathedral jelly and recover ${healAmount} HP.`);
+      } else if (item.kind === 'armor') {
+        entity.armor = (entity.armor || 0) + 1;
+        log('You graft on a molt plate. Your shell thickens.');
+      } else if (item.kind === 'power') {
+        entity.attack = (entity.attack || 0) + 1;
+        log('You pocket a feral idol. Your strikes sharpen.');
+      } else if (item.kind === 'bombPickup') {
+        entity.bombs = (entity.bombs || 0) + 1;
+        log('You pocket a charge fruit. Press F to plant it.');
+      }
+      item.dead = true;
+    }
+
+    function passableForBomb(x, y) {
+      return inBounds(x, y) && !map[y][x].blocksMove;
+    }
+
+    function detonateBomb(bomb) {
+      if (!bomb || bomb.dead) return;
+      bomb.dead = true;
+      const cells = [];
+      for (let y = bomb.y - 2; y <= bomb.y + 2; y++) {
+        for (let x = bomb.x - 2; x <= bomb.x + 2; x++) {
+          if (!inBounds(x, y)) continue;
+          if (Math.max(Math.abs(x - bomb.x), Math.abs(y - bomb.y)) > 2) continue;
+          cells.push({ x, y });
+          if (map[y][x].kind !== 'portal') {
+            map[y][x] = createTile('floor', biome, x, y);
+          }
+        }
+      }
+      const hitBosses = new Set();
+      for (const e of entities.filter(e => e && !e.dead && e.id !== 'player')) {
+        if (Math.max(Math.abs(e.x - bomb.x), Math.abs(e.y - bomb.y)) > 2) continue;
+        if (e.kind === 'enemy' && e.bossCoreId) {
+          if (hitBosses.has(e.bossCoreId)) continue;
+          hitBosses.add(e.bossCoreId);
+          const core = getBossCore(e);
+          if (core) {
+            const dmg = Math.max(4, Math.min((player?.attack || 3) + 1, (player?.attack || 3) + 2));
+            core.hp -= dmg;
+            for (const seg of entities.filter(seg => seg && !seg.dead && seg.bossCoreId === e.bossCoreId)) seg.hp = core.hp;
+            log(`The charge fruit ruptures ${core.name} for ${dmg}.`);
+            if (core.hp <= 0) {
+              pendingKillText = `${core.name} comes apart in a hot little civic miracle.`;
+              for (const seg of entities.filter(seg => seg && seg.bossCoreId === e.bossCoreId && !seg.dead)) { seg.dead = true; seg.blocks = false; }
+              bossCores.delete(e.bossCoreId);
+              if (player) {
+                player.invulnerableSteps = Math.max(player.invulnerableSteps || 0, 55);
+                player.bossKills = (player.bossKills || 0) + 1;
+              }
+              entities.push(makeEntity({
+                id: `boss-power-${bomb.x}-${bomb.y}-${rng.int(1,99999)}`,
+                name: 'Boss idol',
+                x: bomb.x,
+                y: bomb.y,
+                glyph: '!',
+                color: '#facc15',
+                blocks: false,
+                kind: 'power'
+              }));
+              log(`${core.name} bursts and leaves an idol in the smoke.`);
+            }
+          }
+          continue;
+        }
+        if (e.kind === 'enemy') {
+          const dmg = Math.max(4, Math.min((player?.attack || 3) + 1, (player?.attack || 3) + 2));
+          e.hp -= dmg;
+          log(`${e.name} eats ${dmg} bomb damage.`);
+          if (e.hp <= 0) {
+            pendingKillText = `${e.name} is scattered across the aisle in hot fragments.`;
+            killEntity(e);
+          }
+        }
+      }
+      log('The charge fruit blows out walls and rewrites the room.');
+    }
+
+    function plantBomb() {
+      if (!player || gameOver) return false;
+      if ((player.bombs || 0) <= 0) {
+        log('You have no charge fruit to plant.');
+        return false;
+      }
+      if (entities.some(e => e && !e.dead && e.kind === 'bombArmed' && e.x === player.x && e.y === player.y)) {
+        log('A charge fruit is already whining at your feet.');
+        return false;
+      }
+      player.bombs -= 1;
+      entities.push(makeEntity({
+        id: `bomb-armed-${player.x}-${player.y}-${rng.int(1,99999)}`,
+        name: 'Armed charge fruit',
+        x: player.x,
+        y: player.y,
+        glyph: '¤',
+        color: '#fb7185',
+        blocks: false,
+        kind: 'bombArmed',
+        timer: 3
+      }));
+      log('You plant a charge fruit. Three beats until bloom.');
+      return true;
+    }
+
+    function applyHazard(entity) {
+      const tile = map[entity.y][entity.x];
+      if (!tile || entity.dead) return;
+      if (tile.kind === 'portal') {
+        const destinations = portalLinks.filter(p =>
+          (p.x !== entity.x || p.y !== entity.y) &&
+          (!getEntityAt(p.x, p.y, entity.id) || getEntityAt(p.x, p.y, entity.id).dead)
+        );
+        if (destinations.length) {
+          const target = randItem(destinations);
+          entity.x = target.x;
+          entity.y = target.y;
+          if (entity.id === 'player') log('A void fold misfiles your body and spits you elsewhere.');
+          else if (visible.has(key(target.x, target.y))) log(`${entity.name} slips through black retail weather.`);
+        }
+        return;
+      }
+      if (tile.kind === 'arc') {
+        if (!tileArcActive(tile)) return;
+        if ((entity.invulnerableSteps || 0) > 0 && entity.id === 'player') {
+          log('The field around you grounds the arc into glitter.');
+          return;
+        }
+        const resisted = Math.min(Math.max(0, Math.floor((entity.armor || 0) / 2)), Math.max(0, (tile.damage || 3) - 1));
+        const dmg = Math.max(1, (tile.damage || 3) - resisted);
+        entity.hp -= dmg;
+        if (entity.id === 'player') log(`A static lane lashes you for ${dmg}.`);
+        else if (visible.has(key(entity.x, entity.y))) log(`${entity.name} catches the full wire hymn.`);
+        if (entity.hp <= 0) {
+          pendingKillText = entity.kind === 'enemy' ? `${entity.name} blackens and drops out of the pattern.` : '';
+          killEntity(entity);
+        }
+        return;
+      }
+      if (tile.kind !== 'acid') return;
+      if ((entity.invulnerableSteps || 0) > 0 && entity.id === 'player') {
+        log('The field around you turns the seep aside.');
+        return;
+      }
+      const resisted = Math.max(0, Math.min(Math.floor((entity.armor || 0) / 2), (tile.damage || 1) - 1));
+      const dmg = Math.max(1, (tile.damage || 1) - resisted);
+      entity.hp -= dmg;
+      if (entity.id === 'player') log(`The chemical seep bites your ankles for ${dmg}.`);
+      else if (visible.has(key(entity.x, entity.y))) log(`${entity.name} sizzles in chemical runoff.`);
+      if (entity.hp <= 0) {
+        pendingKillText = entity.kind === 'enemy' ? `${entity.name} dissolves into a bitter puddle.` : '';
+        killEntity(entity);
+      }
+    }
+
+    function tryMove(entity, dx, dy) {
+      if (gameOver || !entity) return false;
+      const nx = entity.x + dx;
+      const ny = entity.y + dy;
+      if (!inBounds(nx, ny)) return false;
+      if (map[ny][nx].blocksMove) {
+        if (entity.id === 'player') log('The wall gives you nothing.');
+        return false;
+      }
+
+      const target = getEntityAt(nx, ny, entity.id);
+      if (target && target.blocks) {
+        attack(entity, target);
+        return true;
+      }
+
+      entity.x = nx;
+      entity.y = ny;
+
+      if (entity.id === 'player') {
+        tryPickup(entity);
+        applyHazard(entity);
+        if (relic && relic.x === nx && relic.y === ny && !relic.recovered) {
+          log('You stand over a warm relic sigil. Press E to read and recover it.');
+        }
+        if (map[ny][nx].kind === 'portal') {
+          log('The air tastes like copied static.');
+        }
+        if (exitGate && exitGate.x === nx && exitGate.y === ny) {
+          if (exitGate.open) {
+            descendFloor();
+            return false;
+          }
+          log('The lift cage stays dark. It wants a fragment.');
+        }
+      }
+
+      return true;
+    }
+
+
+    function grantRelicBoon() {
+      if (!player) return '';
+      const boons = [
+        {
+          label: 'Void-slick Aegis',
+          apply() {
+            player.invulnerableSteps = Math.max(player.invulnerableSteps || 0, 100);
+            return 'For 100 steps, damage skates off your skin.';
+          }
+        },
+        {
+          label: 'Predatory Bloom',
+          apply() {
+            player.attack += 1;
+            return 'Your damage rises by 1.';
+          }
+        },
+        {
+          label: 'Molt Dividend',
+          apply() {
+            player.armor += 1;
+            return 'Your armor rises by 1.';
+          }
+        }
+      ];
+      const boon = randItem(boons);
+      const desc = boon.apply();
+      player.relicBoonLabel = boon.label;
+      return `${boon.label}: ${desc}`;
+    }
+
+    function showLore(lore) {
+      elLoreTitle.textContent = lore.title || 'Recovered Fragment';
+      elLoreBody.textContent = lore.body || '';
+      elLoreModal.style.display = 'flex';
+    }
+
+    function closeLore() {
+      elLoreModal.style.display = 'none';
+    }
+
+    function handleInteract() {
+      if (gameOver || !player || !relic) return;
+      const dx = Math.abs(player.x - relic.x);
+      const dy = Math.abs(player.y - relic.y);
+      if (dx + dy <= 1) {
+        if (!relic.recovered) {
+          relic.recovered = true;
+          if (exitGate) {
+            exitGate.open = true;
+            exitGate.glyph = '◉';
+            exitGate.color = '#f9a8d4';
+          }
+          const boonText = grantRelicBoon();
+          showLore(relic.lore);
+          log('Fragment recovered. Somewhere ahead, an old lift coughs awake.');
+          log(boonText);
+        } else {
+          showLore(relic.lore);
+          log('You reread the fragment. It remains unpleasantly alive.');
+        }
+      } else {
+        log('Nothing near you answers the hand.');
+      }
+    }
+
+    function stepToward(startX, startY, goalX, goalY, blockerId) {
+      const queue = [{ x: startX, y: startY }];
+      const cameFrom = new Map();
+      cameFrom.set(key(startX, startY), null);
+      const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+
+      while (queue.length) {
+        const current = queue.shift();
+        if (current.x === goalX && current.y === goalY) break;
+
+        for (const [dx, dy] of dirs) {
+          const nx = current.x + dx;
+          const ny = current.y + dy;
+          const k = key(nx, ny);
+          if (!inBounds(nx, ny)) continue;
+          if (cameFrom.has(k)) continue;
+          if (map[ny][nx].blocksMove) continue;
+          const entity = getEntityAt(nx, ny, blockerId);
+          if (entity && entity.blocks && entity.id !== 'player') continue;
+          cameFrom.set(k, current);
+          queue.push({ x: nx, y: ny });
+        }
+      }
+
+      const goalKey = key(goalX, goalY);
+      if (!cameFrom.has(goalKey)) return null;
+      let cur = { x: goalX, y: goalY };
+      let prev = cameFrom.get(goalKey);
+      while (prev && !(prev.x === startX && prev.y === startY)) {
+        cur = prev;
+        prev = cameFrom.get(key(prev.x, prev.y));
+      }
+      return cur;
+    }
+
+
+    function canBossOccupy(coreId, positions) {
+      for (const pos of positions) {
+        if (!inBounds(pos.x, pos.y) || map[pos.y][pos.x].blocksMove) return false;
+        const blocker = getEntityAt(pos.x, pos.y, null);
+        if (blocker && blocker.blocks && blocker.bossCoreId !== coreId && blocker.id !== 'player') return false;
+      }
+      return true;
+    }
+
+    function moveBossGroup(coreId, dx, dy) {
+      const segs = entities.filter(e => e && !e.dead && e.bossCoreId === coreId);
+      if (!segs.length) return false;
+      const positions = segs.map(seg => ({ x: seg.x + dx, y: seg.y + dy }));
+      if (!canBossOccupy(coreId, positions)) return false;
+      for (const seg of segs) {
+        if (player && player.x === seg.x + dx && player.y === seg.y + dy) return false;
+      }
+      segs.forEach((seg, idx) => {
+        seg.x = positions[idx].x;
+        seg.y = positions[idx].y;
+        applyHazard(seg);
+      });
+      return true;
+    }
+
+    function moveSerpentBoss(coreId, nextHead) {
+      const segs = entities.filter(e => e && !e.dead && e.bossCoreId === coreId).sort((a, b) => (a.bossIndex || 0) - (b.bossIndex || 0));
+      if (!segs.length) return false;
+      const occupiedNow = new Set(segs.map(seg => key(seg.x, seg.y)));
+      if (!inBounds(nextHead.x, nextHead.y) || map[nextHead.y][nextHead.x].blocksMove) return false;
+      const blocker = getEntityAt(nextHead.x, nextHead.y, segs[0].id);
+      if (blocker && blocker.blocks && blocker.id !== 'player' && !occupiedNow.has(key(nextHead.x, nextHead.y))) return false;
+      const prior = segs.map(seg => ({ x: seg.x, y: seg.y }));
+      segs[0].x = nextHead.x;
+      segs[0].y = nextHead.y;
+      for (let i = 1; i < segs.length; i++) {
+        segs[i].x = prior[i - 1].x;
+        segs[i].y = prior[i - 1].y;
+      }
+      for (const seg of segs) applyHazard(seg);
+      return true;
+    }
+
+    function serpentHeadNext(monster) {
+      const next = stepToward(monster.x, monster.y, player.x, player.y, monster.id);
+      if (next) return next;
+      const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+      for (const [dx, dy] of rng.shuffle(dirs)) {
+        const nx = monster.x + dx;
+        const ny = monster.y + dy;
+        if (!inBounds(nx, ny) || map[ny][nx].blocksMove) continue;
+        const blocker = getEntityAt(nx, ny, monster.id);
+        if (!blocker || blocker.id === 'player') return { x: nx, y: ny };
+      }
+      return null;
+    }
+
+    function bossTurn(monster) {
+      const core = getBossCore(monster);
+      if (!core) return;
+      if (core.lastActTurn === turnCount) return;
+      core.lastActTurn = turnCount;
+
+      const segs = entities.filter(e => e && !e.dead && e.bossCoreId === monster.bossCoreId);
+      const adjacent = segs.find(seg => Math.abs(seg.x - player.x) + Math.abs(seg.y - player.y) <= 1);
+      if (adjacent) {
+        attack(adjacent, player);
+        return;
+      }
+      if (turnCount % (core.moveRate || 2) !== 0) return;
+
+      if (core.type === 'serpent') {
+        const head = segs.find(seg => seg.bossHead) || segs[0];
+        const next = serpentHeadNext(head);
+        if (next) moveSerpentBoss(monster.bossCoreId, next);
+        return;
+      }
+
+      const avgX = segs.reduce((s, e) => s + e.x, 0) / segs.length;
+      const avgY = segs.reduce((s, e) => s + e.y, 0) / segs.length;
+      const dx = Math.sign(player.x - avgX);
+      const dy = Math.sign(player.y - avgY);
+      const tries = Math.abs(player.x - avgX) >= Math.abs(player.y - avgY)
+        ? [[dx, 0], [0, dy], [dx, dy], [0, -dy], [-dx, 0]]
+        : [[0, dy], [dx, 0], [dx, dy], [-dx, 0], [0, -dy]];
+      for (const [mx, my] of tries) {
+        if (!mx && !my) continue;
+        if (moveBossGroup(monster.bossCoreId, mx, my)) return;
+      }
+    }
+
+    function sentinelMove(monster, dist, dirs) {
+      if (dist <= monster.patience) {
+        return false;
+      }
+      const next = stepToward(monster.x, monster.y, player.x, player.y, monster.id);
+      if (!next) return false;
+      if (!getEntityAt(next.x, next.y, monster.id)) {
+        monster.x = next.x;
+        monster.y = next.y;
+        applyHazard(monster);
+        return true;
+      }
+      return false;
+    }
+
+    function ambushMove(monster, dist, dirs) {
+      if (monster.asleep && dist > 4 && !visible.has(key(monster.x, monster.y))) {
+        return false;
+      }
+      monster.asleep = false;
+      if (dist <= 1) {
+        attack(monster, player);
+        return true;
+      }
+      const next = stepToward(monster.x, monster.y, player.x, player.y, monster.id);
+      if (!next) return false;
+      if (!getEntityAt(next.x, next.y, monster.id)) {
+        monster.x = next.x;
+        monster.y = next.y;
+        applyHazard(monster);
+        return true;
+      }
+      return false;
+    }
+
+    function monsterTurn(monster) {
+      if (!monster || monster.dead || gameOver || !player) return;
+      const monsterKey = key(monster.x, monster.y);
+      const dist = Math.abs(monster.x - player.x) + Math.abs(monster.y - player.y);
+      const canSensePlayer = visible.has(monsterKey) || explored.has(monsterKey) || dist <= 6;
+      if (!canSensePlayer && monster.ai !== 'wander' && monster.ai !== 'sentinel') return;
+
+      if (dist <= 1 && monster.ai !== 'coward') {
+        attack(monster, player);
+        return;
+      }
+      const dirs = rng.shuffle([[1,0],[-1,0],[0,1],[0,-1]]);
+
+      if (monster.ai === 'wander') {
+        if (rng.next() < 0.75) {
+          for (const [dx, dy] of dirs) {
+            const nx = monster.x + dx, ny = monster.y + dy;
+            if (inBounds(nx, ny) && !map[ny][nx].blocksMove && !getEntityAt(nx, ny, monster.id)) {
+              monster.x = nx;
+              monster.y = ny;
+              applyHazard(monster);
+              return;
+            }
+          }
+        }
+        if (dist <= 4) {
+          const next = stepToward(monster.x, monster.y, player.x, player.y, monster.id);
+          if (next && !getEntityAt(next.x, next.y, monster.id)) {
+            monster.x = next.x;
+            monster.y = next.y;
+            applyHazard(monster);
+          }
+        }
+        return;
+      }
+
+      if (monster.ai === 'coward' && dist < 9) {
+        let best = null, bestDist = dist;
+        for (const [dx, dy] of dirs) {
+          const nx = monster.x + dx, ny = monster.y + dy;
+          if (!inBounds(nx, ny) || map[ny][nx].blocksMove || getEntityAt(nx, ny, monster.id)) continue;
+          const nd = Math.abs(nx - player.x) + Math.abs(ny - player.y);
+          if (nd > bestDist) { bestDist = nd; best = [nx, ny]; }
+        }
+        if (best) {
+          monster.x = best[0];
+          monster.y = best[1];
+          applyHazard(monster);
+          return;
+        }
+      }
+
+      if (monster.boss) {
+        bossTurn(monster);
+        return;
+      }
+      if (monster.ai === 'sentinel' && sentinelMove(monster, dist, dirs)) return;
+      if (monster.ai === 'ambush' && ambushMove(monster, dist, dirs)) return;
+      if (monster.ai === 'sprinter') {
+        if (monster.sprintStamina == null) monster.sprintStamina = rng.int(3, 6);
+        if (monster.restTurns == null) monster.restTurns = 0;
+        if (monster.restTurns > 0) {
+          monster.restTurns -= 1;
+          if (rng.next() < 0.35) {
+            for (const [dx, dy] of dirs) {
+              const nx = monster.x + dx, ny = monster.y + dy;
+              if (inBounds(nx, ny) && !map[ny][nx].blocksMove && !getEntityAt(nx, ny, monster.id)) {
+                monster.x = nx;
+                monster.y = ny;
+                applyHazard(monster);
+                return;
+              }
+            }
+          }
+          return;
+        }
+        if (dist <= 8) {
+          const next = stepToward(monster.x, monster.y, player.x, player.y, monster.id);
+          if (next && !getEntityAt(next.x, next.y, monster.id)) {
+            monster.x = next.x;
+            monster.y = next.y;
+            monster.sprintStamina -= 1;
+            applyHazard(monster);
+            if (monster.sprintStamina <= 0) {
+              monster.restTurns = rng.int(2, 4);
+              monster.sprintStamina = rng.int(3, 6);
+            }
+          }
+          return;
+        }
+      }
+
+      const next = stepToward(monster.x, monster.y, player.x, player.y, monster.id);
+      if (!next) return;
+      if (!getEntityAt(next.x, next.y, monster.id)) {
+        monster.x = next.x;
+        monster.y = next.y;
+        applyHazard(monster);
+      }
+    }
+
+    function endTurn() {
+      turnCount += 1;
+      for (const monster of entities.filter(e => e && e.kind === 'enemy' && !e.dead)) {
+        monsterTurn(monster);
+      }
+      for (const e of entities) {
+        if (!e || e.dead) continue;
+        if ((e.knockCooldown || 0) > 0) e.knockCooldown -= 1;
+      }
+      for (const bomb of entities.filter(e => e && !e.dead && e.kind === 'bombArmed')) {
+        bomb.timer -= 1;
+        if (bomb.timer <= 0) detonateBomb(bomb);
+      }
+      if (player && (player.invulnerableSteps || 0) > 0) player.invulnerableSteps -= 1;
+      render();
+    }
+
+    function grantFloorGrowth() {
+      if (!player) return;
+      player.floorClears = (player.floorClears || 0) + 1;
+      player.level = (player.level || 1) + 1;
+
+      const hpGain = player.level % 2 === 0 ? 1 : 0;
+      const powerGain = player.level % 3 === 0 ? 1 : 0;
+      const armorGain = 1;
+
+      player.maxHp += hpGain;
+      player.hp = Math.min(player.maxHp, player.hp + 2 + hpGain);
+      player.attack += powerGain;
+      player.armor += armorGain;
+
+      log(`You harden between floors.${armorGain ? ' +1 armor.' : ''}${powerGain ? ' +1 power.' : ''}${hpGain ? ' +1 max HP.' : ''}`);
+    }
+
+    function descendFloor() {
+      grantFloorGrowth();
+      floorNumber += 1;
+      bestFloorThisSession = Math.max(bestFloorThisSession, floorNumber);
+      try {
+        sessionStorage.setItem('trashland_best_floor', String(bestFloorThisSession));
+      } catch (e) {}
+      log(`The lift shudders downward. Floor ${floorNumber} arrives like a new bad idea.`);
+      generateFloor(false);
+    }
+
+    function generateFloor(resetPlayer) {
+      biome = chooseBiome();
+      currentFloorMod = chooseFloorMod();
+      biomeMode = currentFloorMod.id === 'patchwork' ? 'patchwork' : currentFloorMod.id === 'inversion' ? 'invert' : (rng.next() < Math.min(0.9, 0.38 + floorNumber * 0.05) ? 'noisy' : 'smooth');
+      bossCores = new Map();
+      floorNotes = [];
+      buildMap();
+      if (resetPlayer || !player) {
+        player = createFreshPlayer();
+      }
+      const carried = {
+        hp: player.hp,
+        maxHp: player.maxHp,
+        attack: player.attack,
+        armor: player.armor,
+        level: player.level,
+        relicsRecovered: player.relicsRecovered || 0,
+        floorClears: player.floorClears || 0,
+        invulnerableSteps: player.invulnerableSteps || 0,
+        knockResistSteps: player.knockResistSteps || 0,
+        relicBoonLabel: player.relicBoonLabel || '',
+        bossKills: player.bossKills || 0,
+        bombs: player.bombs || 0
+      };
+      player = carried;
+      spawnEntities();
+      player.hp = Math.min(player.maxHp, Math.max(1, player.hp));
+      visible = new Set();
+      explored = new Set();
+      log(`${biome.name} // ${currentFloorMod.name}`);
+      log(randItem(biome.flavor));
+      log(currentFloorMod.desc);
+      for (const note of floorNotes) log(note);
+      render();
+    }
+
+    function restart() {
+      currentSeed = ((Date.now() & 0xffffffff) ^ Math.floor(Math.random() * 0xffffffff)) >>> 0;
+      rng = new RNG(currentSeed);
+      floorNumber = 1;
+      try {
+        const storedBestFloor = Number(sessionStorage.getItem('trashland_best_floor') || String(bestFloorThisSession || 1));
+        if (Number.isFinite(storedBestFloor) && storedBestFloor > 0) {
+          bestFloorThisSession = storedBestFloor;
+        }
+      } catch (e) {}
+      gameOver = false;
+      initialized = false;
+      player = createFreshPlayer();
+      elLog.innerHTML = '';
+      generateFloor(true);
+      log('You wake beneath a long-buried retail district with one charge fruit in your pocket. Recover the fragment. Find the lift before the mall remembers you.');
+      initialized = true;
+      console.assert(typeof tryMove === 'function', 'Movement should exist');
+      console.assert(typeof stepToward === 'function', 'Pathfinding should exist');
+      console.assert(boardCells.length === CONFIG.height, 'Board should stay initialized');
+      console.assert(rooms.length > 2, 'Rooms should exist after restart');
+      console.assert(entities.some(e => e.kind === 'enemy'), 'There should be enemies');
+      console.assert(!!exitGate, 'Exit gate should exist');
+    }
+
+    function normalizeKey(eventKey) {
+      if (typeof eventKey !== 'string') return '';
+      return eventKey.length === 1 ? eventKey.toLowerCase() : eventKey;
+    }
+
+    function handleInput(event) {
+      if (!initialized) return;
+
+      if (elLoreModal.style.display === 'flex') {
+        if (['Escape', 'Enter', ' '].includes(event.key)) {
+          event.preventDefault();
+          closeLore();
+        }
+        return;
+      }
+
+      if (!player || gameOver) {
+        if (normalizeKey(event.key) === 'r') restart();
+        return;
+      }
+
+      const k = normalizeKey(event.key);
+      const dirs = {
+        ArrowUp: [0, -1],
+        ArrowDown: [0, 1],
+        ArrowLeft: [-1, 0],
+        ArrowRight: [1, 0],
+        w: [0, -1],
+        a: [-1, 0],
+        s: [0, 1],
+        d: [1, 0],
+      };
+
+      if (k in dirs) {
+        event.preventDefault();
+        const [dx, dy] = dirs[k];
+        const acted = tryMove(player, dx, dy);
+        render();
+        if (acted && !gameOver) endTurn();
+        return;
+      }
+
+      if (k === 'e') {
+        event.preventDefault();
+        handleInteract();
+        render();
+        return;
+      }
+
+      if (k === 'f') {
+        event.preventDefault();
+        const acted = plantBomb();
+        render();
+        if (acted && !gameOver) endTurn();
+        return;
+      }
+
+      if (k === 'r') {
+        event.preventDefault();
+        restart();
+      }
+    }
+
+    elLoreModal.addEventListener('click', (event) => {
+      if (event.target === elLoreModal) closeLore();
+    });
+    window.addEventListener('keydown', handleInput);
+
+    try {
+      createBoard();
+      restart();
+      elBoot.style.display = 'none';
+    } catch (e) {
+      bootError('Could not initialize the one-file engine.', String(e && (e.message || e)));
+    }
+  </script>
+</body>
+</html>
