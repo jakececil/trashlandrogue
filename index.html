@@ -88,7 +88,7 @@
       max-width: 100%;
       gap: 0;
       padding: 14px;
-      background: rgba(0, 0, 0, 0.5);
+      background: rgba(0, 0, 0, 0.72);
       border-radius: 14px;
       line-height: 18px;
       user-select: none;
@@ -313,18 +313,18 @@
         seen: '#070b10',
         player: '#22d3ee',
         relic: '#facc15',
-        heal: '#4ade80',
-        exit: '#fb7185',
+        heal: '#facc15',
+        exit: '#facc15',
         wallPlastic: '#f472b6',
         wallWire: '#38bdf8',
         wallFungus: '#a78bfa',
         wallBone: '#fca5a5',
         wallData: '#67e8f9',
-        floorPlastic: '#51606b',
-        floorWire: '#4c6168',
-        floorFungus: '#5a5567',
-        floorBone: '#66565c',
-        floorData: '#496068'
+        floorPlastic: '#3a4045',
+        floorWire: '#364146',
+        floorFungus: '#403d46',
+        floorBone: '#473d41',
+        floorData: '#344146'
       }
     };
 
@@ -349,7 +349,7 @@
         id: 'wire_cathedral',
         name: 'Service Spine',
         wallGlyphs: ['╬', '╫', '║'],
-        floorGlyphs: ['·', ':', '='],
+        floorGlyphs: ['·', ':', ';'],
         wallColor: CONFIG.colors.wallWire,
         floorColor: CONFIG.colors.floorWire,
         enemyNames: ['vent crawler', 'glass bat', 'undercourt roach', 'drain eel', 'vault croc'],
@@ -365,7 +365,7 @@
         id: 'fungus_bloom',
         name: 'Bloom Cavern',
         wallGlyphs: ['▒', '░', '*'],
-        floorGlyphs: ['~', '.', '°'],
+        floorGlyphs: ['.', '·', '°'],
         wallColor: CONFIG.colors.wallFungus,
         floorColor: CONFIG.colors.floorFungus,
         enemyNames: ['splitjaw', 'crooked saint', 'stitched lizard', 'mirrorcat', 'mold jackal'],
@@ -397,7 +397,7 @@
         id: 'data_landfill',
         name: 'Arcade Midden',
         wallGlyphs: ['█', '▓', '▒'],
-        floorGlyphs: ['0', '1', '.'],
+        floorGlyphs: ['.', ',', ';'],
         wallColor: CONFIG.colors.wallData,
         floorColor: CONFIG.colors.floorData,
         enemyNames: ['mirrorcat', 'gloom serpent', 'pit jackal', 'ash spider', 'vault croc', 'night lynx', 'cave widow'],
@@ -858,8 +858,9 @@
       const macro = hashNoise(Math.floor(x / 8), Math.floor(y / 6), type === 'wall' ? 31 : 47);
       const meso = hashNoise(Math.floor(x / 3), Math.floor(y / 3), type === 'wall' ? 63 : 71);
       const micro = hashNoise(x, y, type === 'wall' ? 83 : 97);
-      let variance = biomeMode === 'noisy' ? 44 : biomeMode === 'patchwork' ? 38 : 22;
-      variance += Math.min(24, Math.floor(floorNumber * 1.4));
+      const isFloor = type === 'floor';
+      let variance = isFloor ? (biomeMode === 'patchwork' ? 8 : 5) : (biomeMode === 'noisy' ? 44 : biomeMode === 'patchwork' ? 38 : 22);
+      if (!isFloor) variance += Math.min(24, Math.floor(floorNumber * 1.4));
       let out = varyColor(color, variance);
       if (biomeMode === 'invert') {
         const num = parseInt(out.slice(1), 16);
@@ -867,6 +868,12 @@
         const g = 255 - ((num >> 8) & 255);
         const b = 255 - (num & 255);
         out = `#${[r,g,b].map(v => v.toString(16).padStart(2,'0')).join('')}`;
+      }
+      if (isFloor) {
+        if (macro > 0.72) out = varyColor(out, 7);
+        if (meso > 0.86) out = varyColor(out, 5);
+        if (micro > 0.97) out = varyColor(out, 8);
+        return out;
       }
       if (macro > 0.66) out = varyColor(out, 36 + Math.floor(floorNumber * 0.9));
       if (meso > 0.78) out = varyColor(out, 24);
@@ -893,8 +900,8 @@
     }
 
     function mutateFloorGlyph(baseGlyph, x, y, liveBiome) {
-      const grit = ['.', ',', '·', ':', ';', '°', '`', '•', '=', '_', '˙'];
-      const ooze = ['~', '≈', '∿', '¤'];
+      const grit = ['.', ',', '·', ':', ';', '°', '`', '•', '˙'];
+      const ooze = ['.', '·', ':', ';', '°'];
       const macro = hashNoise(Math.floor(x / 8), Math.floor(y / 8), 281 + floorNumber);
       const meso = hashNoise(Math.floor(x / 3), Math.floor(y / 3), 311 + floorNumber);
       const micro = hashNoise(x, y, 401 + floorNumber);
@@ -974,7 +981,7 @@
         x,
         y,
         glyph: '✚',
-        color: '#86efac',
+        color: CONFIG.colors.relic,
         blocks: false,
         kind: 'bigheal'
       }));
@@ -989,7 +996,7 @@
         x,
         y,
         glyph: '*',
-        color: '#fca5a5',
+        color: CONFIG.colors.relic,
         blocks: false,
         kind: 'bombPickup'
       }));
@@ -1592,7 +1599,7 @@ ${couplet[1]}`
           x: c.x,
           y: c.y,
           glyph: '+',
-          color: varyColor(CONFIG.colors.heal, 20),
+          color: CONFIG.colors.relic,
           blocks: false,
           kind: 'heal'
         }));
@@ -1613,7 +1620,7 @@ ${couplet[1]}`
           x: c.x,
           y: c.y,
           glyph: ']',
-          color: varyColor('#fde68a', 16),
+          color: CONFIG.colors.relic,
           blocks: false,
           kind: 'armor'
         }));
@@ -1637,7 +1644,7 @@ ${couplet[1]}`
           x: c.x,
           y: c.y,
           glyph: '!',
-          color: varyColor('#fb923c', 20),
+          color: CONFIG.colors.relic,
           blocks: false,
           kind: 'power'
         }));
@@ -1652,7 +1659,7 @@ ${couplet[1]}`
         x,
         y,
         glyph: ']',
-        color: varyColor('#fde68a', 16),
+        color: CONFIG.colors.relic,
         blocks: false,
         kind: 'armor'
       }));
@@ -1666,7 +1673,7 @@ ${couplet[1]}`
         x,
         y,
         glyph: '!',
-        color: varyColor('#fb923c', 20),
+        color: CONFIG.colors.relic,
         blocks: false,
         kind: 'power'
       }));
@@ -1693,17 +1700,17 @@ ${couplet[1]}`
 
     function boardOpacityFor(tile, isVisible) {
       if (!tile) return isVisible ? '1' : '0.25';
-      if (tile.kind === 'floor') return isVisible ? '0.64' : '0.26';
-      if (tile.kind === 'acid') return isVisible ? '0.82' : '0.36';
-      if (tile.kind === 'portal') return isVisible ? '0.88' : '0.42';
-      if (tile.kind === 'arc') return isVisible ? '0.9' : '0.42';
-      return isVisible ? '1' : '0.52';
+      if (tile.kind === 'floor') return isVisible ? '0.78' : '0.3';
+      if (tile.kind === 'acid') return isVisible ? '0.9' : '0.4';
+      if (tile.kind === 'portal') return isVisible ? '0.92' : '0.44';
+      if (tile.kind === 'arc') return isVisible ? '0.94' : '0.46';
+      return isVisible ? '1' : '0.56';
     }
 
     function entityRenderPriority(e) {
       if (!e) return -1;
+      if (e.id === 'player') return 200;
       if (e.id === 'relic' || e.id === 'exit') return 110;
-      if (e.id === 'player') return 100;
       if (e.kind === 'enemy') return 80;
       if (e.kind === 'bombArmed') return 40;
       return 20;
@@ -1720,6 +1727,7 @@ ${couplet[1]}`
             cell.style.color = CONFIG.colors.unseen;
             cell.style.opacity = '1';
             cell.style.filter = 'none';
+            cell.style.fontSize = '18px';
             continue;
           }
           const present = tilePresentation(tile);
@@ -1728,6 +1736,7 @@ ${couplet[1]}`
           cell.style.color = present.color;
           cell.style.opacity = boardOpacityFor(tile, isVisible);
           cell.style.filter = 'none';
+          cell.style.fontSize = tile.kind === 'floor' ? '14px' : '18px';
         }
       }
     }
@@ -1749,6 +1758,7 @@ ${couplet[1]}`
         cell.style.color = e.color;
         cell.style.opacity = '1';
         cell.style.filter = 'none';
+        cell.style.fontSize = '18px';
       }
     }
 
@@ -1783,7 +1793,7 @@ ${couplet[1]}`
         x,
         y,
         glyph: '+',
-        color: CONFIG.colors.heal,
+        color: CONFIG.colors.relic,
         blocks: false,
         kind: 'heal'
       }));
