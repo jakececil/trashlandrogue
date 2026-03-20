@@ -320,11 +320,11 @@
         wallFungus: '#a78bfa',
         wallBone: '#fca5a5',
         wallData: '#67e8f9',
-        floorPlastic: '#18212f',
-        floorWire: '#102129',
-        floorFungus: '#1d1730',
-        floorBone: '#26171c',
-        floorData: '#0d1d25'
+        floorPlastic: '#51606b',
+        floorWire: '#4c6168',
+        floorFungus: '#5a5567',
+        floorBone: '#66565c',
+        floorData: '#496068'
       }
     };
 
@@ -1691,6 +1691,24 @@ ${couplet[1]}`
       for (const k of visible) explored.add(k);
     }
 
+    function boardOpacityFor(tile, isVisible) {
+      if (!tile) return isVisible ? '1' : '0.25';
+      if (tile.kind === 'floor') return isVisible ? '0.64' : '0.26';
+      if (tile.kind === 'acid') return isVisible ? '0.82' : '0.36';
+      if (tile.kind === 'portal') return isVisible ? '0.88' : '0.42';
+      if (tile.kind === 'arc') return isVisible ? '0.9' : '0.42';
+      return isVisible ? '1' : '0.52';
+    }
+
+    function entityRenderPriority(e) {
+      if (!e) return -1;
+      if (e.id === 'relic' || e.id === 'exit') return 110;
+      if (e.id === 'player') return 100;
+      if (e.kind === 'enemy') return 80;
+      if (e.kind === 'bombArmed') return 40;
+      return 20;
+    }
+
     function renderBoardLayer() {
       for (let y = 0; y < CONFIG.height; y++) {
         for (let x = 0; x < CONFIG.width; x++) {
@@ -1705,24 +1723,27 @@ ${couplet[1]}`
             continue;
           }
           const present = tilePresentation(tile);
+          const isVisible = visible.has(k);
           cell.textContent = present.glyph;
           cell.style.color = present.color;
-          if (visible.has(k)) {
-            cell.style.opacity = '1';
-            cell.style.filter = 'none';
-          } else {
-            cell.style.opacity = '0.45';
-            cell.style.filter = 'none';
-          }
+          cell.style.opacity = boardOpacityFor(tile, isVisible);
+          cell.style.filter = 'none';
         }
       }
     }
 
     function renderEntityLayer() {
+      const topEntities = new Map();
       for (const e of entities) {
         if (!e || e.dead) continue;
         const k = key(e.x, e.y);
         if (!visible.has(k)) continue;
+        const existing = topEntities.get(k);
+        if (!existing || entityRenderPriority(e) >= entityRenderPriority(existing)) {
+          topEntities.set(k, e);
+        }
+      }
+      for (const e of topEntities.values()) {
         const cell = boardCells[e.y][e.x];
         cell.textContent = e.glyph;
         cell.style.color = e.color;
