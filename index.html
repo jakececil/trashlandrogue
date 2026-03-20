@@ -88,7 +88,7 @@
       max-width: 100%;
       gap: 0;
       padding: 14px;
-      background: rgba(0, 0, 0, 0.22);
+      background: rgba(0, 0, 0, 0.5);
       border-radius: 14px;
       line-height: 18px;
       user-select: none;
@@ -309,8 +309,8 @@
       acidCount: 18,
       colors: {
         bg: '#070b10',
-        unseen: '#03050a',
-        seen: '#0c121a',
+        unseen: '#020309',
+        seen: '#070b10',
         player: '#22d3ee',
         relic: '#facc15',
         heal: '#4ade80',
@@ -320,11 +320,11 @@
         wallFungus: '#a78bfa',
         wallBone: '#fca5a5',
         wallData: '#67e8f9',
-        floorPlastic: '#31425b',
-        floorWire: '#1f3b47',
-        floorFungus: '#362d4f',
-        floorBone: '#4a2f36',
-        floorData: '#193440'
+        floorPlastic: '#18212f',
+        floorWire: '#102129',
+        floorFungus: '#1d1730',
+        floorBone: '#26171c',
+        floorData: '#0d1d25'
       }
     };
 
@@ -1709,10 +1709,10 @@ ${couplet[1]}`
           cell.style.color = present.color;
           if (visible.has(k)) {
             cell.style.opacity = '1';
-            cell.style.filter = 'brightness(1.2)';
+            cell.style.filter = 'none';
           } else {
-            cell.style.opacity = '0.28';
-            cell.style.filter = 'brightness(0.55)';
+            cell.style.opacity = '0.45';
+            cell.style.filter = 'none';
           }
         }
       }
@@ -1727,7 +1727,7 @@ ${couplet[1]}`
         cell.textContent = e.glyph;
         cell.style.color = e.color;
         cell.style.opacity = '1';
-        cell.style.filter = 'brightness(1.25)';
+        cell.style.filter = 'none';
       }
     }
 
